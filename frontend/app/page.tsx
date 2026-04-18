@@ -466,6 +466,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'seat'|'metrics'>('seat');
   const [theme, setTheme] = useState('light');
   const isDark = theme === 'dark';
+  const [highContrast, setHighContrast] = useState(false);
 
   const [isRoofOpen, setIsRoofOpen] = useState(true);
   const [isPitchRetracted, setIsPitchRetracted] = useState(false);
@@ -621,7 +622,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className={`relative w-screen h-screen overflow-hidden ${isDark ? 'bg-[#020617] text-white' : 'bg-slate-50 text-slate-900'} font-sans`}>
+    <div className={`relative w-screen h-screen overflow-hidden ${isDark ? 'bg-[#020617] text-white' : 'bg-slate-50 text-slate-900'} ${highContrast ? 'high-contrast' : ''} font-sans`}>
       
       {/* ONBOARDING HINT */}
       {!selectedSeat && (
@@ -633,8 +634,18 @@ export default function App() {
       )}
 
       {/* 3D CANVAS */}
-      <div className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ position: [0, 45, -60], fov: 50 }}>
+      <div className="absolute inset-0 z-0" role="img" aria-label="Interactive 3D Bernabeu Stadium with real-time crowd simulation powered by SwarmAI">
+        <Canvas
+          shadows
+          camera={{ position: [0, 45, -60], fov: 50 }}
+          aria-label="3D Stadium crowd simulation — use the SwarmAI Assistant panel to navigate"
+          role="application"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'c') setIsChatOpen(o => !o);
+            if (e.key === 'Escape') setIsChatOpen(false);
+          }}
+        >
           <color attach="background" args={[isDark ? '#020617' : '#f8fafc']} />
           <fogExp2 attach="fog" args={[isDark ? '#020617' : '#f8fafc', 0.008]} />
           <Environment preset={isDark ? "night" : "city"} />
@@ -693,7 +704,8 @@ export default function App() {
                  </p>
                  <button 
                      onClick={() => setAppState('login_attendee')}
-                     className="w-full max-w-sm group relative px-10 py-4 mb-4 rounded-xl bg-gradient-to-r from-[#FEBE10] to-yellow-600 text-black font-black text-xs tracking-widest uppercase hover:scale-105 active:scale-95 transition-all shadow-xl overflow-hidden"
+                     aria-label="Enter the SwarmAI attendee simulation"
+                     className="w-full max-w-sm group relative px-10 py-4 mb-4 rounded-xl bg-gradient-to-r from-[#FEBE10] to-yellow-600 text-black font-black text-xs tracking-widest uppercase hover:scale-105 active:scale-95 transition-all shadow-xl overflow-hidden focus-visible:ring-4 focus-visible:ring-yellow-400"
                  >
                      <span className="relative z-10">Attend Simulation</span>
                      <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20 transition-opacity" />
@@ -715,15 +727,19 @@ export default function App() {
                  <h1 className="text-white text-2xl font-black uppercase tracking-widest mb-2">Attendee Auth</h1>
                  <p className="text-gray-400 text-xs text-center mb-8">Enter your name to secure your unique identity payload. You will be able to book your 1-of-5000 seat on the grid.</p>
                  
-                 <form onSubmit={(e) => { e.preventDefault(); if (username) setAppState('main'); }} className="w-full flex flex-col gap-4">
+                 <form onSubmit={(e) => { e.preventDefault(); if (username) setAppState('main'); }} className="w-full flex flex-col gap-4" aria-label="Attendee login form">
+                     <label htmlFor="username-input" className="sr-only">Username</label>
                      <input 
+                         id="username-input"
                          type="text"
                          value={username}
                          onChange={(e) => setUsername(e.target.value)}
                          placeholder="Enter Username"
-                         className="w-full bg-black/50 border border-white/20 p-4 rounded text-center text-white tracking-widest uppercase focus:border-[#FEBE10] outline-none"
+                         autoComplete="username"
+                         aria-required="true"
+                         className="w-full bg-black/50 border border-white/20 p-4 rounded text-center text-white tracking-widest uppercase focus:border-[#FEBE10] outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
                      />
-                     <button type="submit" disabled={!username} className="bg-[#FEBE10] text-black disabled:opacity-50 font-black uppercase px-6 py-4 rounded hover:bg-white hover:scale-[1.02] active:scale-95 transition-all">
+                     <button type="submit" disabled={!username} aria-label="Log in and enter the stadium simulation" className="bg-[#FEBE10] text-black disabled:opacity-50 font-black uppercase px-6 py-4 rounded hover:bg-white hover:scale-[1.02] active:scale-95 transition-all focus-visible:ring-4 focus-visible:ring-yellow-400">
                         Log In & Map Space
                      </button>
                  </form>
@@ -744,15 +760,29 @@ export default function App() {
                      </span>
                  </div>
              </div>
-             <div className="flex gap-2">
-                <a href="/dashboard" className={`px-4 py-2 border rounded-xl font-bold flex items-center gap-2 text-[10px] uppercase tracking-widest transition-all hover:bg-[#FEBE10] hover:text-black ${isDark ? 'bg-[#FEBE10]/10 border-[#FEBE10]/30 text-[#FEBE10]' : 'bg-blue-50 border-blue-200 text-blue-600'}`}>
-                  📊 OPERATOR DASHBOARD
+             <div className="flex gap-2" role="toolbar" aria-label="Stadium controls">
+                <a href="/dashboard" aria-label="Open operator dashboard" className={`px-4 py-2 border rounded-xl font-bold flex items-center gap-2 text-[10px] uppercase tracking-widest transition-all hover:bg-[#FEBE10] hover:text-black focus-visible:ring-2 focus-visible:ring-yellow-400 ${isDark ? 'bg-[#FEBE10]/10 border-[#FEBE10]/30 text-[#FEBE10]' : 'bg-blue-50 border-blue-200 text-blue-600'}`}>
+                  <span aria-hidden="true">📊</span> OPERATOR DASHBOARD
                 </a>
-                <button onClick={() => setIsEmergency(!isEmergency)} className={`px-4 py-2 border rounded-xl font-bold text-[10px] uppercase tracking-widest ${isEmergency ? 'bg-red-500 text-white animate-pulse' : isDark ? 'bg-black/50 border-white/20' : 'bg-white/80 border-slate-300'}`}>
+                <button
+                  onClick={() => setIsEmergency(!isEmergency)}
+                  aria-label={isEmergency ? 'Cancel emergency reroute' : 'Trigger emergency evacuation reroute'}
+                  aria-pressed={isEmergency}
+                  className={`px-4 py-2 border rounded-xl font-bold text-[10px] uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-red-400 ${isEmergency ? 'bg-red-500 text-white animate-pulse' : isDark ? 'bg-black/50 border-white/20' : 'bg-white/80 border-slate-300'}`}>
                    {isEmergency ? 'REROUTING...' : 'EMERGENCY TRIGGER'}
                 </button>
-                <button onClick={() => setTheme(isDark ? 'light' : 'dark')} className={`p-2 border rounded-xl ${isDark ? 'bg-black/50 border-white/20' : 'bg-white/80 border-slate-300'}`}>
-                   {isDark ? <Sun size={14} /> : <Moon size={14} />}
+                <button
+                  onClick={() => setHighContrast(h => !h)}
+                  aria-label={highContrast ? 'Switch to normal contrast mode' : 'Switch to high contrast mode'}
+                  aria-pressed={highContrast}
+                  className={`px-3 py-2 border rounded-xl font-bold text-[9px] uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-blue-400 ${isDark ? 'bg-black/50 border-white/20 text-white' : 'bg-white/80 border-slate-300 text-slate-700'}`}>
+                  {highContrast ? 'Normal' : 'High Contrast'}
+                </button>
+                <button
+                  onClick={() => setTheme(isDark ? 'light' : 'dark')}
+                  aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                  className={`p-2 border rounded-xl focus-visible:ring-2 focus-visible:ring-blue-400 ${isDark ? 'bg-black/50 border-white/20' : 'bg-white/80 border-slate-300'}`}>
+                   {isDark ? <Sun size={14} aria-hidden="true" /> : <Moon size={14} aria-hidden="true" />}
                 </button>
              </div>
          </header>
@@ -809,7 +839,7 @@ export default function App() {
                       <Clock size={12} /> Real-Time Predictors
                    </h3>
                    
-                   <div className="space-y-3">
+                   <div className="space-y-3" aria-live="polite" aria-label="Real-time wait time predictions">
                       <div className="flex justify-between items-end border-b border-white/5 pb-2">
                           <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">East Concession</span>
                           <div className="text-right">
@@ -854,7 +884,9 @@ export default function App() {
                   {/* FPV TOGGLE */}
                   <button 
                      onClick={() => setIsFpv(!isFpv)}
-                     className={`py-2 px-4 rounded-full text-[9px] flex items-center gap-2 font-black uppercase tracking-widest border shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap ${isFpv ? 'bg-red-500/20 text-red-700 border-red-500/40' : 'bg-slate-200/50 text-black border-black/30 hover:bg-slate-300/80'}`}
+                     aria-label={isFpv ? 'Exit first person view mode' : 'Enter first person view from your seat'}
+                     aria-pressed={isFpv}
+                     className={`py-2 px-4 rounded-full text-[9px] flex items-center gap-2 font-black uppercase tracking-widest border shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all whitespace-nowrap focus-visible:ring-4 focus-visible:ring-yellow-400 ${isFpv ? 'bg-red-500/20 text-red-700 border-red-500/40' : 'bg-slate-200/50 text-black border-black/30 hover:bg-slate-300/80'}`}
                   >
                      {isFpv ? <><EyeOff size={12}/> EXIT FPV</> : <><Eye size={12}/> VIEW FPV</>}
                   </button>
@@ -862,15 +894,15 @@ export default function App() {
                   <div className="w-[1px] h-6 bg-black/20" />
 
                   {/* QUICK ROUTES */}
-                  <div className="flex items-center gap-2">
-                     <button onClick={() => requestPath('restroom')} className="flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-blue-100 text-blue-900 border-blue-300 hover:shadow-md">
-                         <Waves size={12}/> Restrooms
+                  <div className="flex items-center gap-2" role="group" aria-label="Quick route options">
+                     <button aria-label="Route me to nearest restrooms" onClick={() => requestPath('restroom')} className="flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-blue-100 text-blue-900 border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-400">
+                         <Waves size={12} aria-hidden="true"/> Restrooms
                      </button>
-                     <button onClick={() => requestPath('concession')} className="flex items-center gap-2 hover:bg-amber-500 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-amber-100 text-amber-900 border-amber-300 hover:shadow-md">
-                         <Coffee size={12}/> Food
+                     <button aria-label="Route me to nearest food concessions" onClick={() => requestPath('concession')} className="flex items-center gap-2 hover:bg-amber-500 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-amber-100 text-amber-900 border-amber-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-amber-400">
+                         <Coffee size={12} aria-hidden="true"/> Food
                      </button>
-                     <button onClick={() => requestPath('gate')} className="flex items-center gap-2 hover:bg-purple-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-purple-100 text-purple-900 border-purple-300 hover:shadow-md">
-                         <DoorOpen size={12}/> Exit
+                     <button aria-label="Route me to nearest stadium exit" onClick={() => requestPath('gate')} className="flex items-center gap-2 hover:bg-purple-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-purple-100 text-purple-900 border-purple-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-purple-400">
+                         <DoorOpen size={12} aria-hidden="true"/> Exit
                      </button>
                   </div>
                   
@@ -903,10 +935,12 @@ export default function App() {
             {/* CHATBOT */}
             <div className="pointer-events-auto absolute bottom-24 right-6">
                {isChatOpen ? (
-                  <div className={`w-80 h-96 rounded-[2rem] flex flex-col shadow-2xl border backdrop-blur-3xl ${isDark ? 'bg-black/80 border-white/20' : 'bg-white/95 border-slate-200'}`}>
+                  <div className={`w-80 h-96 rounded-[2rem] flex flex-col shadow-2xl border backdrop-blur-3xl ${isDark ? 'bg-black/80 border-white/20' : 'bg-white/95 border-slate-200'}`} role="dialog" aria-label="SwarmAI navigation assistant" aria-modal="false">
                      <div className="p-4 border-b border-white/10 flex justify-between items-center bg-[#FEBE10]/10 rounded-t-[2rem]">
-                        <span className="font-black text-[10px] uppercase tracking-widest flex items-center gap-2"><MapPin size={12} className="text-[#FEBE10]" /> Swarm Assistant</span>
-                        <X size={14} className="cursor-pointer opacity-50 hover:opacity-100" onClick={() => setIsChatOpen(false)} />
+                        <span className="font-black text-[10px] uppercase tracking-widest flex items-center gap-2"><MapPin size={12} className="text-[#FEBE10]" aria-hidden="true" /> Swarm Assistant</span>
+                        <button aria-label="Close SwarmAI assistant" onClick={() => setIsChatOpen(false)} className="opacity-50 hover:opacity-100 focus-visible:ring-2 focus-visible:ring-white rounded">
+                          <X size={14} aria-hidden="true" />
+                        </button>
                      </div>
                      
                      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 text-[11px] font-medium leading-relaxed">
@@ -918,10 +952,10 @@ export default function App() {
                         <div ref={chatBottomRef} />
                      </div>
 
-                     <div className="px-4 pb-2 pt-2 flex gap-2 overflow-x-auto whitespace-nowrap border-t border-white/5 pointer-events-auto">
-                        <button onClick={() => requestPath('restroom')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest`}>🚻 Nearby Restrooms</button>
-                        <button onClick={() => requestPath('concession')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest`}>🍔 Nearby Food</button>
-                        <button onClick={() => requestPath('gate')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest`}>🚪 Nearby Gates</button>
+                     <div className="px-4 pb-2 pt-2 flex gap-2 overflow-x-auto whitespace-nowrap border-t border-white/5 pointer-events-auto" role="group" aria-label="Quick route shortcuts">
+                        <button aria-label="Find nearest restrooms" onClick={() => requestPath('restroom')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🚻</span> Nearby Restrooms</button>
+                        <button aria-label="Find nearest food concessions" onClick={() => requestPath('concession')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🍔</span> Nearby Food</button>
+                        <button aria-label="Find nearest exit gates" onClick={() => requestPath('gate')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🚪</span> Nearby Gates</button>
                      </div>
                      
                      <div className="p-3">
@@ -929,22 +963,25 @@ export default function App() {
                           onSubmit={(e) => { e.preventDefault(); handleSendMessage(); }} 
                           className={`flex items-center gap-2 p-1.5 pl-4 rounded-full border ${isDark ? 'bg-black/50 border-white/20' : 'bg-slate-100 border-slate-200'} shadow-inner focus-within:border-[#FEBE10] transition-colors`}
                         >
+                           <label htmlFor="chat-input" className="sr-only">Message the SwarmAI assistant</label>
                            <input 
+                             id="chat-input"
                              type="text" 
                              value={inputValue}
                              onChange={(e) => setInputValue(e.target.value)}
                              placeholder="Ask for restrooms, food, exits..." 
+                             aria-label="Chat message input"
                              className="bg-transparent outline-none flex-1 text-[11px] placeholder:text-gray-500" 
                            />
-                           <button type="submit" className="bg-[#FEBE10] p-2 rounded-full hover:scale-105 active:scale-95 transition-transform shadow-md">
-                             <Send size={12} className="text-black ml-0.5" />
+                           <button type="submit" aria-label="Send message to SwarmAI" className="bg-[#FEBE10] p-2 rounded-full hover:scale-105 active:scale-95 transition-transform shadow-md focus-visible:ring-2 focus-visible:ring-yellow-600">
+                             <Send size={12} className="text-black ml-0.5" aria-hidden="true" />
                            </button>
                         </form>
                      </div>
                   </div>
                ) : (
-                  <button onClick={() => {
-                     // Auto-assign a random seat to showcase features if none selected
+                  <button
+                    onClick={() => {
                      if (!selectedSeat) {
                        const angle = Math.random() * Math.PI * 2;
                        const rowFactor = 0.3 + Math.random() * 0.6;
@@ -957,10 +994,13 @@ export default function App() {
                      setIsChatOpen(true);
                      setChatMessages(prev => [
                        ...prev,
-                       { text: '👋 Welcome! A seat has been auto-assigned for you. Try tapping 🚻 Restrooms, 🍔 Food, or 🚪 Exit in the dock below to start smart navigation!', isUser: false }
+                       { text: 'Welcome! A seat has been auto-assigned for you. Try tapping Restrooms, Food, or Exit in the dock below to start smart navigation!', isUser: false }
                      ]);
-                  }} className="px-6 py-4 rounded-full bg-gradient-to-r from-[#FEBE10] to-yellow-500 text-black font-black text-[11px] uppercase tracking-widest shadow-[0_10px_30px_rgba(254,190,16,0.4)] flex items-center gap-2 hover:scale-105 transition-transform animate-bounce">
-                     <MessageSquare size={16} /> Help me route
+                  }}
+                  aria-label="Open SwarmAI navigation assistant (or press C on the 3D canvas)"
+                  aria-haspopup="dialog"
+                  className="px-6 py-4 rounded-full bg-gradient-to-r from-[#FEBE10] to-yellow-500 text-black font-black text-[11px] uppercase tracking-widest shadow-[0_10px_30px_rgba(254,190,16,0.4)] flex items-center gap-2 hover:scale-105 transition-transform animate-bounce focus-visible:ring-4 focus-visible:ring-yellow-400">
+                     <MessageSquare size={16} aria-hidden="true" /> Help me route
                   </button>
                )}
             </div>

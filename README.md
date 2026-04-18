@@ -155,15 +155,15 @@ Tests cover over 35+ cases across 4 test suites:
 | Database | SQLite (demo) / PostgreSQL (production) |
 | Testing | pytest + FastAPI TestClient |
 
-## Accessibility (WCAG 2.1 AA)
+## ♿ Accessibility
 
-- ARIA labels on all interactive elements and 3D canvas
-- Keyboard navigation with visible focus indicators
-- Skip-to-content link for screen reader users
-- High-contrast mode support
-- Reduced motion support via `prefers-reduced-motion`
-- Scalable viewport (zoom up to 5x, no user-scalable=no)
-- Screen reader utility class (`.sr-only`)
+- WCAG 2.1 AA compliant where possible
+- ARIA labels added to all interactive elements and 3D canvas
+- Keyboard navigation support
+- High contrast mode available
+- Proper focus indicators and semantic HTML
+
+**Note**: The 3D nature of the application limits full compliance, but significant improvements have been made for screen reader users and keyboard navigation.
 
 ## Key Metrics (Simulated)
 
