@@ -105,11 +105,10 @@ npm run dev
 ```
 
 **URLs:**
-- **Stadium View**: http://localhost:3000
-- **Operator Dashboard**: http://localhost:3000/dashboard
-- **Mobile Demo**: http://localhost:3000/mobile-demo
-- **Debug Console**: http://localhost:3000/debug
-- **API Docs**: http://localhost:8000/docs
+- **Stadium View**: https://swarmai-backend-820901016043.us-central1.run.app
+- **Operator Dashboard**: https://swarmai-backend-820901016043.us-central1.run.app/dashboard
+- **Debug Console**: https://swarmai-backend-820901016043.us-central1.run.app/debug
+- **API Docs**: https://swarmai-backend-820901016043.us-central1.run.app/docs
 
 ### Docker Start
 ```bash
@@ -118,7 +117,7 @@ GOOGLE_API_KEY="your-key" docker-compose up --build
 
 ## Demo Flow (for Judges)
 
-1. **Open http://localhost:3000** — See 3,000 animated agents in 3D stadium
+1. **Open https://swarmai-frontend-820901016043.us-central1.run.app/dashboard** — See 3,000 animated agents in 3D stadium
 2. **Chat with SwarmAI Assistant** — Powered by Google Gemini, ask about restrooms, food, exits
 3. **Open /dashboard** — Watch live heatmap + metrics update in real-time
 4. **Click "1000 Agents"** — Watch congestion spike, swarm intelligence optimizes flow
