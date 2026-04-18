@@ -1,10 +1,10 @@
-# 🐝 SwarmAI — Decentralized Attendee-Powered AI Swarm
+# SwarmAI — Decentralized Attendee-Powered AI Swarm
 
 > **Turn 80,000 phones into a self-organizing AI swarm that eliminates stadium chaos.**
 
 SwarmAI is a decentralized multi-agent system where every attendee's device becomes an intelligent node. Instead of relying on expensive centralized cameras and operator dashboards, fans' phones team up like a living nervous system to self-manage the entire stadium experience.
 
-## 🎯 Problem Statement
+## Problem Statement
 
 Large-scale sporting venues (80,000+ capacity) face:
 - **Crowd bottlenecks** — gates, corridors, and concourses jam during entry/exit and halftime
@@ -12,16 +12,16 @@ Large-scale sporting venues (80,000+ capacity) face:
 - **Zero real-time coordination** — fans are passive data points, not active participants
 - **Group separation** — families and friends lose each other in massive crowds
 
-## 💡 The SwarmAI Solution
+## The SwarmAI Solution
 
 | Challenge | How SwarmAI Solves It |
 |---|---|
 | **Crowd Movement** | Agents run A* pathfinding + game-theory negotiations. They shift positions in real-time to prevent bottlenecks before they form. |
 | **Wait Times** | Crowd-sourced + predictive queue forecasts. Agents suggest staggered times ("Leave at 42nd minute — queue < 2 min"). |
 | **Real-Time Coordination** | Decentralized = no single point of failure. Agents self-organize like ant colonies for halftime waves, emergency exits, friend meetups. |
-| **Enjoyable Experience** | Gamification: earn Swarm Points by following optimal paths → redeem for priority food, merch, AR filters. |
+| **Enjoyable Experience** | Gamification: earn Swarm Points by following optimal paths, redeem for priority food, merch, AR filters. |
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -40,13 +40,14 @@ Large-scale sporting venues (80,000+ capacity) face:
 ┌──────────────────────┴──────────────────────────────┐
 │              VENUE ORACLE (Light Backend)            │
 │  FastAPI + Swarm Engine + A* Pathfinding             │
+│  Google Gemini 2.0 Flash for AI Assistant            │
 │  100-2000 virtual agents for simulation              │
 │  Game-theory negotiation engine                      │
 │  Metrics + CSV export for pitch deck                 │
 └─────────────────────────────────────────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Manual Start (Recommended for Development)
 
@@ -66,27 +67,27 @@ npm run dev
 ```
 
 **Open in browser:**
-- 🏟️ **Stadium View**: http://localhost:3000
-- 📊 **Operator Dashboard**: http://localhost:3000/dashboard
-- 📱 **Mobile Demo**: http://localhost:3000/mobile-demo
-- 🔧 **Debug Console**: http://localhost:3000/debug
+- **Stadium View**: http://localhost:3000
+- **Operator Dashboard**: http://localhost:3000/dashboard
+- **Mobile Demo**: http://localhost:3000/mobile-demo
+- **Debug Console**: http://localhost:3000/debug
 
 ### Docker Start
 ```bash
 GOOGLE_API_KEY="your-key" docker-compose up --build
 ```
 
-## 📊 Demo Flow (for Judges)
+## Demo Flow (for Judges)
 
-1. **Open http://localhost:3000** → Click "ENTER BERNABÉU" → See 3,000 animated agents in 3D
-2. **Open /dashboard** in another tab → Watch live heatmap + metrics update
-3. **Click "1000 Agents"** → Watch congestion spike, then swarm intelligence optimizes flow
-4. **Toggle "Swarm OFF"** → See metrics degrade without AI coordination
-5. **Click "Emergency Reroute"** → All agents instantly redirect to exits
-6. **Open /debug** → See live negotiation messages between agents
-7. **Export CSV** → Download metrics for your pitch deck
+1. **Open http://localhost:3000** — Click "ENTER BERNABÉU" — See 3,000 animated agents in 3D
+2. **Open /dashboard** in another tab — Watch live heatmap + metrics update
+3. **Click "1000 Agents"** — Watch congestion spike, then swarm intelligence optimizes flow
+4. **Toggle "Swarm OFF"** — See metrics degrade without AI coordination
+5. **Click "Emergency Reroute"** — All agents instantly redirect to exits
+6. **Open /debug** — See live negotiation messages between agents
+7. **Export CSV** — Download metrics for your pitch deck
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
@@ -99,7 +100,7 @@ GOOGLE_API_KEY="your-key" docker-compose up --build
 | Charts | Recharts |
 | Database | SQLite (demo) / PostgreSQL (production) |
 
-## 🤖 Google Services Integration
+## Google Services Integration
 
 SwarmAI leverages **Google Gemini AI** as the brain of the SwarmAI Assistant:
 
@@ -110,14 +111,14 @@ SwarmAI leverages **Google Gemini AI** as the brain of the SwarmAI Assistant:
 
 Get your API key at [Google AI Studio](https://aistudio.google.com) and set `GOOGLE_API_KEY` environment variable.
 
-## 📈 Key Metrics (Simulated)
+## Key Metrics (Simulated)
 
 - **Wait Time Reduction**: 35-50%
 - **Flow Efficiency Improvement**: 31%
 - **Negotiation Success Rate**: ~75%
 - **Emergency Reroute**: < 2 seconds for all agents
 
-## 🔒 Privacy First
+## Privacy First
 
 - All agent communication uses **anonymized vectors** — no personal data
 - On-device processing — phone sensors stay on the phone
@@ -126,4 +127,4 @@ Get your API key at [Google AI Studio](https://aistudio.google.com) and set `GOO
 
 ---
 
-Built for the **Google Antigravity Hackathon 2026** 🚀
+Built for the **Google Antigravity Hackathon 2026**

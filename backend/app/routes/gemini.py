@@ -68,7 +68,7 @@ async def gemini_chat(req: ChatRequest):
 
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-2.0-flash",
+            model_name="gemini-2.5-flash-lite",
             system_instruction=SYSTEM_PROMPT
         )
 
@@ -107,36 +107,37 @@ def _fallback_response(message: str) -> ChatResponse:
 
     if any(w in lower for w in ["restroom", "bathroom", "washroom", "toilet"]):
         return ChatResponse(
-            reply="🚻 I've identified 2 restroom blocks in your stadium sector. The North Restroom currently has a 2-min wait (87% shorter than South). Routing you there now!",
+            reply="I've identified 2 restroom blocks in your stadium sector. The North Restroom currently has a 2-min wait (87% shorter than South). Routing you there now.",
             suggested_action="route_restroom"
         )
     elif any(w in lower for w in ["food", "eat", "hungry", "snack", "concession", "drink"]):
         return ChatResponse(
-            reply="🍔 The East Concession stand has the shortest queue right now (~3 min). Following the swarm-optimized route earns you 50 Swarm Points!",
+            reply="The East Concession stand has the shortest queue right now (~3 min). Following the swarm-optimized route earns you 50 Swarm Points.",
             suggested_action="route_food"
         )
     elif any(w in lower for w in ["exit", "gate", "leave", "go home", "emergency"]):
         return ChatResponse(
-            reply="🚪 Gate A (North) is your fastest exit with minimal crowd density. I've plotted the A* optimal path. Follow the green line on your 3D map!",
+            reply="Gate A (North) is your fastest exit with minimal crowd density. I've plotted the A* optimal path. Follow the green line on your 3D map.",
             suggested_action="route_exit"
         )
     elif any(w in lower for w in ["wait", "queue", "how long", "time"]):
         return ChatResponse(
-            reply="⏱️ Current wait estimates — Restrooms: 2min (North) / 18min (South) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing!",
+            reply="Current wait estimates — Restrooms: 2min (North) / 18min (South) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing.",
             suggested_action=None
         )
     elif any(w in lower for w in ["point", "score", "reward", "swarm point"]):
         return ChatResponse(
-            reply="💎 You have 1,240 Swarm Points! Earn more by following optimized routes. At 1,500 you unlock free stadium merch. Keep cooperating with the swarm!",
+            reply="You have 1,240 Swarm Points. Earn more by following optimized routes. At 1,500 you unlock free stadium merch. Keep cooperating with the swarm.",
             suggested_action=None
         )
     elif any(w in lower for w in ["hello", "hi", "hey", "help"]):
         return ChatResponse(
-            reply="👋 Hey there! I'm your SwarmAI Assistant — powered by Google Gemini. I can route you to restrooms, food, or exits using real-time crowd intelligence. What do you need?",
+            reply="Hey there! I'm your SwarmAI Assistant, powered by Google Gemini. I can route you to restrooms, food, or exits using real-time crowd intelligence. What do you need?",
             suggested_action=None
         )
     else:
         return ChatResponse(
-            reply="🧠 I'm SwarmAI — your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where's the nearest restroom?' or 'How long is the food queue?'",
+            reply="I'm SwarmAI — your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where's the nearest restroom?' or 'How long is the food queue?'",
             suggested_action=None
         )
+
