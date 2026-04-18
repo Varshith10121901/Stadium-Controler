@@ -4,26 +4,28 @@
 
 > **Turn 80,000 phones into a self-organizing AI swarm that eliminates stadium chaos.**
 
-SwarmAI is a decentralized multi-agent system where every attendee's device becomes an intelligent node. Instead of relying on expensive centralized cameras and operator dashboards, fans' phones team up like a living nervous system to self-manage the entire stadium experience.
+SwarmAI is a decentralized multi-agent system where every attendee's device becomes an intelligent node. The SwarmAI Assistant is powered by **Google Gemini 2.5 Flash Lite**, processing every attendee message with context-enriched prompting and full stadium topology awareness.
 
-**The SwarmAI Assistant is powered by Google Gemini 2.5 Flash Lite** — processing every attendee message through context-enriched prompting with full stadium topology awareness.
+## Google Services Deep Integration
 
-## Google Services Integration
+SwarmAI uses **Google Gemini AI** (`google-generativeai` SDK) across **3 dedicated endpoints**:
 
-SwarmAI uses **Google Gemini AI** (`google-generativeai` SDK) as the core intelligence layer:
+| Google Service | Endpoint | Usage |
+|---|---|---|
+| **Gemini 2.5 Flash Lite** | `POST /api/chat` | Natural language chatbot with multi-turn conversation, stadium-aware system prompts, seat-context injection |
+| **Gemini 2.5 Flash Lite** | `POST /api/swarm-suggest` | Real-time route optimization — receives crowd density data, user position, destination; returns JSON-structured route recommendations |
+| **Gemini 2.5 Flash Lite** | `POST /api/analyze-density` | Operator intelligence — analyzes zone-level density readings, predicts bottlenecks, assesses emergency risk levels |
 
-| Google Service | Usage in SwarmAI |
-|---|---|
-| **Google Gemini 2.5 Flash Lite** | Powers the SwarmAI Assistant chatbot — processes natural language queries with stadium-aware context (seat position, crowd density, zone topology) |
-| **`google-generativeai` Python SDK** | Backend integration at `backend/app/routes/gemini.py` — system prompt with full 80,000-seat stadium layout, context-enriched prompting, action detection |
-| **Google AI Studio** | API key provisioning and model management |
+### Implementation Details
+- **SDK**: `google-generativeai` (in `requirements.txt`)
+- **Integration file**: `backend/app/routes/gemini.py` (250+ lines)
+- **3 specialized system prompts**: Chat Assistant, Route Optimizer, Density Analyzer
+- **Context-enriched prompting**: User's seat coordinates, crowd density, conversation history injected into each Gemini call
+- **Action detection**: Gemini responses auto-trigger A* pathfinding on the 3D map
+- **Multi-turn support**: Conversation history (last 6 messages) sent as context
+- **Graceful fallback**: Smart responses when offline
 
-- **`POST /api/chat`** — Every user message is processed by **Gemini 2.5 Flash Lite** with stadium-aware system prompts
-- **Context-Enriched Prompting** — Gemini receives the user's seat coordinates, nearby crowd density, and active routes as context for spatially accurate responses
-- **Action Detection** — Gemini responses are parsed for suggested routing actions which auto-trigger A* pathfinding on the 3D map
-- **Graceful Degradation** — When offline, smart fallback responses maintain full functionality
-
-Configuration: Set `GOOGLE_API_KEY` environment variable (get from [Google AI Studio](https://aistudio.google.com)).
+Configuration: `export GOOGLE_API_KEY="your-key"` (get from [Google AI Studio](https://aistudio.google.com))
 
 ## Problem Statement
 
@@ -37,10 +39,10 @@ Large-scale sporting venues (80,000+ capacity) face:
 
 | Challenge | How SwarmAI Solves It |
 |---|---|
-| **Crowd Movement** | Agents run A* pathfinding + game-theory negotiations. They shift positions in real-time to prevent bottlenecks before they form. |
-| **Wait Times** | Crowd-sourced + predictive queue forecasts. Agents suggest staggered times ("Leave at 42nd minute — queue < 2 min"). |
-| **Real-Time Coordination** | Decentralized = no single point of failure. Agents self-organize like ant colonies for halftime waves, emergency exits, friend meetups. |
-| **Enjoyable Experience** | Gamification: earn Swarm Points by following optimal paths, redeem for priority food, merch, AR filters. |
+| **Crowd Movement** | Agents run A* pathfinding + game-theory negotiations to prevent bottlenecks before they form |
+| **Wait Times** | Crowd-sourced + predictive queue forecasts via Gemini AI analysis |
+| **Real-Time Coordination** | Decentralized = no single point of failure. Agents self-organize for emergency exits, friend meetups |
+| **Enjoyable Experience** | Gamification: earn Swarm Points by following optimal paths |
 
 ## Architecture
 
@@ -61,22 +63,21 @@ Large-scale sporting venues (80,000+ capacity) face:
 ┌──────────────────────┴──────────────────────────────┐
 │              VENUE ORACLE (Light Backend)            │
 │  FastAPI + Swarm Engine + A* Pathfinding             │
-│  Google Gemini 2.5 Flash Lite for AI Assistant       │
+│  Google Gemini 2.5 Flash Lite (3 AI endpoints)      │
 │  100-2000 virtual agents for simulation              │
 │  Game-theory negotiation engine                      │
-│  Metrics + CSV export for pitch deck                 │
 └─────────────────────────────────────────────────────┘
 ```
 
 ## Quick Start
 
-### Manual Start (Recommended for Development)
+### Manual Start
 
 **Terminal 1 — Backend:**
 ```bash
 cd backend
 pip install -r requirements.txt
-export GOOGLE_API_KEY="your-gemini-api-key"  # Get from https://aistudio.google.com
+export GOOGLE_API_KEY="your-gemini-api-key"
 python run.py
 ```
 
@@ -87,11 +88,12 @@ npm install
 npm run dev
 ```
 
-**Open in browser:**
+**URLs:**
 - **Stadium View**: http://localhost:3000
 - **Operator Dashboard**: http://localhost:3000/dashboard
 - **Mobile Demo**: http://localhost:3000/mobile-demo
 - **Debug Console**: http://localhost:3000/debug
+- **API Docs**: http://localhost:8000/docs
 
 ### Docker Start
 ```bash
@@ -100,27 +102,54 @@ GOOGLE_API_KEY="your-key" docker-compose up --build
 
 ## Demo Flow (for Judges)
 
-1. **Open http://localhost:3000** — Click "ENTER BERNABEU" — See 3,000 animated agents in 3D
-2. **Open /dashboard** in another tab — Watch live heatmap + metrics update
-3. **Click "1000 Agents"** — Watch congestion spike, then swarm intelligence optimizes flow
-4. **Toggle "Swarm OFF"** — See metrics degrade without AI coordination
-5. **Click "Emergency Reroute"** — All agents instantly redirect to exits
-6. **Chat with SwarmAI Assistant** — Powered by Google Gemini, ask about restrooms, food, exits
-7. **Open /debug** — See live negotiation messages between agents
+1. **Open http://localhost:3000** — See 3,000 animated agents in 3D stadium
+2. **Chat with SwarmAI Assistant** — Powered by Google Gemini, ask about restrooms, food, exits
+3. **Open /dashboard** — Watch live heatmap + metrics update in real-time
+4. **Click "1000 Agents"** — Watch congestion spike, swarm intelligence optimizes flow
+5. **Toggle "Swarm OFF"** — See metrics degrade without AI coordination
+6. **Click "Emergency Reroute"** — All agents instantly redirect to exits
+7. **Open /debug** — See live agent-to-agent negotiation messages
 8. **Export CSV** — Download metrics for your pitch deck
+
+## Testing
+
+Run the test suite:
+```bash
+cd backend
+pytest tests/ -v
+```
+
+Tests cover:
+- Health and root endpoints
+- Stadium layout API
+- Gemini chat (restroom/food/exit/general queries)
+- Gemini swarm-suggest (route optimization)
+- Gemini density analysis (operator insights)
+- Multi-turn conversation with history
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| **AI Engine** | **Google Gemini 2.5 Flash Lite** (via `google-generativeai` SDK) |
-| Backend | Python + FastAPI + WebSockets |
+| **AI Engine** | **Google Gemini 2.5 Flash Lite** (`google-generativeai` SDK) |
+| Backend | Python 3.12 + FastAPI + WebSockets |
 | Simulation | Custom multi-agent engine + A* pathfinding |
 | Frontend | Next.js 15 + TypeScript + Tailwind CSS |
 | 3D Visualization | Three.js + React Three Fiber |
 | State Management | Zustand |
 | Charts | Recharts |
 | Database | SQLite (demo) / PostgreSQL (production) |
+| Testing | pytest + FastAPI TestClient |
+
+## Accessibility (WCAG 2.1 AA)
+
+- ARIA labels on all interactive elements and 3D canvas
+- Keyboard navigation with visible focus indicators
+- Skip-to-content link for screen reader users
+- High-contrast mode support
+- Reduced motion support via `prefers-reduced-motion`
+- Scalable viewport (zoom up to 5x, no user-scalable=no)
+- Screen reader utility class (`.sr-only`)
 
 ## Key Metrics (Simulated)
 

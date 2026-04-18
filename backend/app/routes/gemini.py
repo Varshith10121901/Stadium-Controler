@@ -8,26 +8,40 @@ Google Service: Google Gemini 2.5 Flash Lite
 SDK: google-generativeai (https://pypi.org/project/google-generativeai/)
 API Key: Provisioned via Google AI Studio (https://aistudio.google.com)
 Built with: Google Antigravity
+
+Endpoints:
+  POST /api/chat            — Natural language chatbot (Gemini-powered)
+  POST /api/swarm-suggest   — Real-time route optimization with crowd context
+  POST /api/analyze-density — Gemini analyzes density data for actionable insights
 """
 
 import os
+import json
 import google.generativeai as genai
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api", tags=["gemini"])
 
 # ── Gemini Configuration ─────────────────────────────────────────────────────
-# Set your API key as environment variable: GOOGLE_API_KEY
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
 if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 
-SYSTEM_PROMPT = """You are SwarmAI Assistant — an intelligent crowd navigation AI embedded in a live stadium event system.
+# ── Shared Model Instance ────────────────────────────────────────────────────
+def _get_model(system_instruction: str = None):
+    """Create a Gemini model instance with optional system instruction."""
+    return genai.GenerativeModel(
+        model_name="gemini-2.5-flash-lite",
+        system_instruction=system_instruction
+    )
+
+# ── System Prompts ────────────────────────────────────────────────────────────
+CHAT_SYSTEM_PROMPT = """You are SwarmAI Assistant — an intelligent crowd navigation AI embedded in a live stadium event system.
 
 Your capabilities:
-- You help attendees navigate a large 80,000-capacity stadium (modeled after Santiago Bernabéu)
+- You help attendees navigate a large 80,000-capacity stadium (modeled after Santiago Bernabeu)
 - You provide smart routing to restrooms, food concessions, exits, and gates
 - You give real-time crowd density insights and wait time predictions
 - You coordinate family "Pod Groups" to keep groups together
@@ -47,34 +61,84 @@ If asked about non-stadium topics, briefly answer but redirect to stadium naviga
 Always mention relevant SwarmAI features when appropriate (routing, wait times, Swarm Points).
 """
 
+SUGGEST_SYSTEM_PROMPT = """You are SwarmAI Route Optimizer — a backend intelligence engine for stadium crowd management.
+
+You receive real-time crowd density data, the user's current seat position, and their desired destination.
+You must analyze the crowd conditions and suggest:
+1. The optimal route (avoid high-density zones)
+2. Buffer zone advice (when to leave for shortest wait)
+3. Estimated wait time at destination
+4. Swarm Points the user can earn by following the optimized route
+
+Respond in JSON format:
+{
+  "recommended_route": "description of best path",
+  "avoid_zones": ["list of congested zones"],
+  "buffer_advice": "timing suggestion",
+  "estimated_wait_minutes": number,
+  "swarm_points_reward": number,
+  "confidence": "high/medium/low"
+}
+"""
+
+DENSITY_SYSTEM_PROMPT = """You are SwarmAI Density Analyzer — an AI that interprets crowd density data for stadium operators.
+
+You receive zone-level density readings and must provide:
+1. Overall crowd flow assessment
+2. Predicted bottlenecks in the next 10 minutes
+3. Recommended gate/zone adjustments
+4. Emergency risk level (low/moderate/high/critical)
+
+Respond concisely in 3-4 bullet points. Be data-driven and actionable.
+"""
+
+
 # ── Request/Response Models ───────────────────────────────────────────────────
 class ChatRequest(BaseModel):
     message: str
     seat_x: float | None = None
     seat_z: float | None = None
-    context: str | None = None  # e.g., "user has active route to restroom"
+    context: str | None = None
+    history: list[dict] | None = None  # Multi-turn conversation history
 
 class ChatResponse(BaseModel):
     reply: str
-    suggested_action: str | None = None  # e.g., "route_restroom", "route_food"
+    suggested_action: str | None = None
+
+class SwarmSuggestRequest(BaseModel):
+    user_seat: str
+    destination: str
+    density_map: dict | None = None
+    current_wait_times: dict | None = None
+
+class SwarmSuggestResponse(BaseModel):
+    suggestion: str
+    raw_json: dict | None = None
+
+class DensityAnalysisRequest(BaseModel):
+    zone_densities: dict
+    total_agents: int = 0
+    hotspot_zones: list[str] = []
+    flow_efficiency: float = 0.0
+
+class DensityAnalysisResponse(BaseModel):
+    analysis: str
+    risk_level: str = "low"
 
 
-# ── Gemini Chat Endpoint ─────────────────────────────────────────────────────
+# ── Endpoint 1: Gemini Chat (Natural Language) ───────────────────────────────
 @router.post("/chat", response_model=ChatResponse)
 async def gemini_chat(req: ChatRequest):
     """
     Process a natural language message through Google Gemini and return
     an intelligent, context-aware stadium navigation response.
+    Supports multi-turn conversation via history parameter.
     """
     if not GOOGLE_API_KEY:
-        # Fallback if no API key — still functional with smart hardcoded responses
         return _fallback_response(req.message)
 
     try:
-        model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash-lite",
-            system_instruction=SYSTEM_PROMPT
-        )
+        model = _get_model(CHAT_SYSTEM_PROMPT)
 
         # Build context-enriched prompt
         user_context = ""
@@ -83,28 +147,137 @@ async def gemini_chat(req: ChatRequest):
         if req.context:
             user_context += f"\n[Context: {req.context}]"
 
-        full_prompt = f"{user_context}\nUser: {req.message}"
+        # Multi-turn: build conversation history
+        if req.history and len(req.history) > 0:
+            history_text = "\n".join(
+                f"{'User' if m.get('isUser') else 'Assistant'}: {m.get('text', '')}"
+                for m in req.history[-6:]  # Last 6 messages for context window
+            )
+            user_context += f"\n[Conversation history:\n{history_text}]"
 
+        full_prompt = f"{user_context}\nUser: {req.message}"
         response = model.generate_content(full_prompt)
         reply_text = response.text.strip()
 
-        # Detect suggested actions from the AI response
-        suggested = None
-        lower = reply_text.lower()
-        if any(w in lower for w in ["restroom", "bathroom", "washroom"]):
-            suggested = "route_restroom"
-        elif any(w in lower for w in ["food", "concession", "snack", "eat"]):
-            suggested = "route_food"
-        elif any(w in lower for w in ["exit", "gate", "leave"]):
-            suggested = "route_exit"
-
+        # Detect suggested actions
+        suggested = _detect_action(reply_text)
         return ChatResponse(reply=reply_text, suggested_action=suggested)
 
     except Exception as e:
-        print(f"[Gemini Error] {e}")
+        print(f"[Gemini Chat Error] {e}")
         return _fallback_response(req.message)
 
 
+# ── Endpoint 2: Swarm Route Suggestion (Gemini + Crowd Data) ─────────────────
+@router.post("/swarm-suggest", response_model=SwarmSuggestResponse)
+async def swarm_suggest(req: SwarmSuggestRequest):
+    """
+    Use Google Gemini to generate intelligent route suggestions based on
+    real-time crowd density data and stadium topology.
+    """
+    if not GOOGLE_API_KEY:
+        return SwarmSuggestResponse(
+            suggestion=f"Route from {req.user_seat} to {req.destination}: Follow the A* optimized path shown on your 3D map. Current density is moderate.",
+            raw_json=None
+        )
+
+    try:
+        model = _get_model(SUGGEST_SYSTEM_PROMPT)
+
+        prompt = f"""
+Current stadium situation:
+- User seat: {req.user_seat}
+- Destination: {req.destination}
+- Zone densities: {json.dumps(req.density_map or {})}
+- Current wait times: {json.dumps(req.current_wait_times or {})}
+
+Generate the optimal route suggestion in JSON format.
+"""
+        response = model.generate_content(prompt)
+        reply_text = response.text.strip()
+
+        # Try to parse JSON from Gemini response
+        raw_json = None
+        try:
+            # Strip markdown code fences if present
+            clean = reply_text.replace("```json", "").replace("```", "").strip()
+            raw_json = json.loads(clean)
+        except json.JSONDecodeError:
+            pass
+
+        return SwarmSuggestResponse(suggestion=reply_text, raw_json=raw_json)
+
+    except Exception as e:
+        print(f"[Gemini Suggest Error] {e}")
+        return SwarmSuggestResponse(
+            suggestion=f"Route from {req.user_seat} to {req.destination}: Standard A* path recommended. Density analysis unavailable.",
+            raw_json=None
+        )
+
+
+# ── Endpoint 3: Density Analysis (Gemini + Operator Insights) ────────────────
+@router.post("/analyze-density", response_model=DensityAnalysisResponse)
+async def analyze_density(req: DensityAnalysisRequest):
+    """
+    Use Google Gemini to analyze crowd density data and provide
+    actionable insights for stadium operators.
+    """
+    if not GOOGLE_API_KEY:
+        return DensityAnalysisResponse(
+            analysis="Density analysis requires Google Gemini API key. Set GOOGLE_API_KEY environment variable.",
+            risk_level="unknown"
+        )
+
+    try:
+        model = _get_model(DENSITY_SYSTEM_PROMPT)
+
+        prompt = f"""
+Stadium density report:
+- Total active agents: {req.total_agents}
+- Flow efficiency: {req.flow_efficiency:.1f}%
+- Hotspot zones: {', '.join(req.hotspot_zones) if req.hotspot_zones else 'None detected'}
+- Zone densities: {json.dumps(req.zone_densities)}
+
+Analyze this data and provide actionable recommendations.
+"""
+        response = model.generate_content(prompt)
+        reply_text = response.text.strip()
+
+        # Detect risk level from response
+        lower = reply_text.lower()
+        if "critical" in lower:
+            risk = "critical"
+        elif "high" in lower:
+            risk = "high"
+        elif "moderate" in lower:
+            risk = "moderate"
+        else:
+            risk = "low"
+
+        return DensityAnalysisResponse(analysis=reply_text, risk_level=risk)
+
+    except Exception as e:
+        print(f"[Gemini Density Error] {e}")
+        return DensityAnalysisResponse(
+            analysis=f"Analysis error: {str(e)}. Manual review recommended.",
+            risk_level="unknown"
+        )
+
+
+# ── Action Detection Helper ──────────────────────────────────────────────────
+def _detect_action(text: str) -> str | None:
+    """Parse Gemini response to detect routing actions."""
+    lower = text.lower()
+    if any(w in lower for w in ["restroom", "bathroom", "washroom"]):
+        return "route_restroom"
+    elif any(w in lower for w in ["food", "concession", "snack", "eat"]):
+        return "route_food"
+    elif any(w in lower for w in ["exit", "gate", "leave"]):
+        return "route_exit"
+    return None
+
+
+# ── Fallback Responses ───────────────────────────────────────────────────────
 def _fallback_response(message: str) -> ChatResponse:
     """Smart fallback when Gemini API is unavailable."""
     lower = message.lower()
@@ -126,12 +299,7 @@ def _fallback_response(message: str) -> ChatResponse:
         )
     elif any(w in lower for w in ["wait", "queue", "how long", "time"]):
         return ChatResponse(
-            reply="Current wait estimates — Restrooms: 2min (North) / 18min (South) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing.",
-            suggested_action=None
-        )
-    elif any(w in lower for w in ["point", "score", "reward", "swarm point"]):
-        return ChatResponse(
-            reply="You have 1,240 Swarm Points. Earn more by following optimized routes. At 1,500 you unlock free stadium merch. Keep cooperating with the swarm.",
+            reply="Current wait estimates -- Restrooms: 2min (North) / 18min (South) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing.",
             suggested_action=None
         )
     elif any(w in lower for w in ["hello", "hi", "hey", "help"]):
@@ -141,7 +309,6 @@ def _fallback_response(message: str) -> ChatResponse:
         )
     else:
         return ChatResponse(
-            reply="I'm SwarmAI — your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where's the nearest restroom?' or 'How long is the food queue?'",
+            reply="I'm SwarmAI, your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where is the nearest restroom?' or 'How long is the food queue?'",
             suggested_action=None
         )
-
