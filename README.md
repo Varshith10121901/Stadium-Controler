@@ -119,13 +119,11 @@ cd backend
 pytest tests/ -v
 ```
 
-Tests cover:
-- Health and root endpoints
-- Stadium layout API
-- Gemini chat (restroom/food/exit/general queries)
-- Gemini swarm-suggest (route optimization)
-- Gemini density analysis (operator insights)
-- Multi-turn conversation with history
+Tests cover over 35+ cases across 4 test suites:
+- **`test_main.py`**: Health, root, stadium layout API, agent endpoints, simulation control, metrics, seat locking, routing, dashboard comparison points.
+- **`test_gemini.py`**: Deep integration with Gemini chat (history, multi-turn), swarm-suggest (route optimization), and density analysis (operator insights).
+- **`test_websocket.py`**: Bidirectional WS connections, agent registration, ping/pong, and multi-client handling.
+- **`test_pathfinding.py`**: A* pathfinding algorithms, generic grid mapping operations, and SwarmAgent lifecycle logic.
 
 ## Tech Stack
 
