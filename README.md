@@ -105,10 +105,10 @@ npm run dev
 ```
 
 **URLs:**
-- **Stadium View**: https://swarmai-backend-820901016043.us-central1.run.app
-- **Operator Dashboard**: https://swarmai-backend-820901016043.us-central1.run.app/dashboard
-- **Debug Console**: https://swarmai-backend-820901016043.us-central1.run.app/debug
-- **API Docs**: https://swarmai-backend-820901016043.us-central1.run.app/docs
+- **Stadium View**: https://swarmai-frontend-820901016043.us-central1.run.app
+- **Operator Dashboard**: https://swarmai-frontend-820901016043.us-central1.run.app/dashboard
+- **Debug Console**: https://swarmai-frontend-820901016043.us-central1.run.app/debug
+- **API Docs**: https://swarmai-frontend-820901016043.us-central1.run.app/docs
 
 ### Docker Start
 ```bash
