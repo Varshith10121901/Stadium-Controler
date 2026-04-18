@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .agents.swarm_engine import SwarmEngine
 from .models.database import init_db
-from .routes import api, websocket, dashboard
+from .routes import api, websocket, dashboard, gemini
 
 
 # ── Swarm Engine (singleton) ─────────────────────────────────────────────────
@@ -101,6 +101,7 @@ app.add_middleware(
 app.include_router(api.router)
 app.include_router(websocket.router)
 app.include_router(dashboard.router)
+app.include_router(gemini.router)  # Google Gemini AI-powered chat
 
 
 # ── Root Endpoint ─────────────────────────────────────────────────────────────

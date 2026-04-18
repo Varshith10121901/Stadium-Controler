@@ -52,14 +52,15 @@ Large-scale sporting venues (80,000+ capacity) face:
 
 **Terminal 1 — Backend:**
 ```bash
-cd swarmai/backend
+cd backend
 pip install -r requirements.txt
+export GOOGLE_API_KEY="your-gemini-api-key"  # Get from https://aistudio.google.com
 python run.py
 ```
 
 **Terminal 2 — Frontend:**
 ```bash
-cd swarmai/frontend
+cd frontend
 npm install
 npm run dev
 ```
@@ -72,8 +73,7 @@ npm run dev
 
 ### Docker Start
 ```bash
-cd swarmai
-docker-compose up --build
+GOOGLE_API_KEY="your-key" docker-compose up --build
 ```
 
 ## 📊 Demo Flow (for Judges)
@@ -90,6 +90,7 @@ docker-compose up --build
 
 | Layer | Technology |
 |---|---|
+| **AI Engine** | **Google Gemini 2.0 Flash** (via `google-generativeai`) |
 | Backend | Python + FastAPI + WebSockets |
 | Simulation | Custom multi-agent engine + A* pathfinding |
 | Frontend | Next.js 15 + TypeScript + Tailwind CSS |
@@ -97,6 +98,17 @@ docker-compose up --build
 | State Management | Zustand |
 | Charts | Recharts |
 | Database | SQLite (demo) / PostgreSQL (production) |
+
+## 🤖 Google Services Integration
+
+SwarmAI leverages **Google Gemini AI** as the brain of the SwarmAI Assistant:
+
+- **`/api/chat`** — Every user message is processed by **Gemini 2.0 Flash** with stadium-aware context (seat position, crowd density, active routes)
+- **Context-Enriched Prompting** — The system prompt provides Gemini with full stadium topology (gates, concessions, restrooms, sections) so responses are spatially accurate
+- **Action Detection** — Gemini responses are parsed for suggested actions (route to restroom/food/exit) which auto-trigger A* pathfinding on the 3D map
+- **Graceful Fallback** — When API key is absent, smart hardcoded responses maintain full functionality
+
+Get your API key at [Google AI Studio](https://aistudio.google.com) and set `GOOGLE_API_KEY` environment variable.
 
 ## 📈 Key Metrics (Simulated)
 

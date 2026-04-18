@@ -548,7 +548,7 @@ export default function App() {
      }, 1000);
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
     const newMsg = inputValue;
     setInputValue("");
@@ -564,7 +564,27 @@ export default function App() {
     }
 
     if (!target_type) {
-        setChatMessages(prev => [...prev, { text: newMsg, isUser: true }, { text: "[SYSTEM OUT OF BOUNDS] I am specifically tuned for spatial routing in the stadium. Try asking me for 'restrooms', 'food', or 'exits'.", isUser: false }]);
+        // Send to Google Gemini AI for intelligent response
+        setChatMessages(prev => [...prev, { text: newMsg, isUser: true }]);
+        try {
+            const geminiRes = await fetch('http://localhost:8000/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    message: newMsg,
+                    seat_x: selectedSeat ? selectedSeat[0] : null,
+                    seat_z: selectedSeat ? selectedSeat[2] : null,
+                })
+            });
+            const data = await geminiRes.json();
+            setChatMessages(prev => [...prev, { text: data.reply, isUser: false }]);
+            // If Gemini suggests an action, auto-trigger it
+            if (data.suggested_action === 'route_restroom') requestPath('restroom');
+            else if (data.suggested_action === 'route_food') requestPath('concession');
+            else if (data.suggested_action === 'route_exit') requestPath('gate');
+        } catch {
+            setChatMessages(prev => [...prev, { text: "🧠 SwarmAI Gemini is processing... Try asking about restrooms, food, or exits for instant routing!", isUser: false }]);
+        }
         return;
     }
 
