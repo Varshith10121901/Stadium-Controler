@@ -1,10 +1,13 @@
 """
 SwarmAI — Main FastAPI Application
 ====================================
+Built with Google Antigravity | Powered by Google Gemini AI
+
 Entry point for the backend. Sets up:
   - CORS for Next.js frontend
   - REST API routes
   - WebSocket routes
+  - Google Gemini AI chat endpoint (google-generativeai SDK)
   - Swarm Engine lifecycle (start on startup)
   - Database initialization
 

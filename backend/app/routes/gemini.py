@@ -1,9 +1,13 @@
 """
-SwarmAI — Google Gemini AI Integration
-========================================
-Powers the SwarmAI Assistant with Gemini Pro for intelligent,
-context-aware stadium navigation and crowd management advice.
-Uses Google AI Studio / Gemini API for natural language understanding.
+SwarmAI — Google Gemini AI Integration (Google Service)
+=========================================================
+This module integrates Google's Gemini AI (google-generativeai SDK)
+as the intelligence layer for the SwarmAI stadium assistant chatbot.
+
+Google Service: Google Gemini 2.5 Flash Lite
+SDK: google-generativeai (https://pypi.org/project/google-generativeai/)
+API Key: Provisioned via Google AI Studio (https://aistudio.google.com)
+Built with: Google Antigravity
 """
 
 import os
