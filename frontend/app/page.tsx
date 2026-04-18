@@ -396,21 +396,21 @@ function StadiumArchitecture({ isDark, isRoofOpen }: { isDark: boolean; isRoofOp
   );
 }
 
-function CameraController({ isFpv, seat, mappedPath }: { isFpv: boolean, seat: [number,number,number]|null, mappedPath: Array<[number,number]> }) {
+function CameraController({ isFpv, seat, mappedPath, isFollowingPath }: { isFpv: boolean, seat: [number,number,number]|null, mappedPath: Array<[number,number]>, isFollowingPath: boolean }) {
   const { camera } = useThree();
   const [animStart, setAnimStart] = useState<number | null>(null);
 
   // Mark animation timer precisely when perspective mode changes
   useEffect(() => {
      setAnimStart(Date.now());
-  }, [isFpv, mappedPath]);
+  }, [isFpv, mappedPath, isFollowingPath]);
 
   useFrame((state) => {
      const controls = state.controls as any;
      if (!controls || !animStart) return;
 
      if (isFpv && seat) {
-        if (Date.now() - animStart < 1500) {
+        if (Date.now() - animStart < 1500 || isFollowingPath) {
            // Elevate camera significantly inside FPV to guarantee no heads/seats block the view of the green routing line
            camera.position.lerp(new THREE.Vector3(seat[0] * 0.95, seat[1] + 10, seat[2] * 0.95), 0.05);
 
@@ -432,23 +432,9 @@ function CameraController({ isFpv, seat, mappedPath }: { isFpv: boolean, seat: [
         controls.minDistance = 5;
      } else if (!isFpv) {
         if (Date.now() - animStart < 1500) {
-           if (mappedPath && mappedPath.length > 0 && seat) {
-               // When requesting a route from the Aerial Global view, fly the camera to a raised panoramic observation angle 
-               // stationed directly behind the user's seat, looking down at the targeted Store / Room
-               const target = mappedPath[mappedPath.length - 1];
-               const worldX = (target[0] - 50) * 1.1; 
-               const worldZ = (target[1] - 50) * 1.1;
-               
-               const r = Math.hypot(worldX, worldZ);
-               const seatY = r < 25 ? 0 : ((r - 25) / 30) * 20;
-
-               controls.target.lerp(new THREE.Vector3(worldX, seatY, worldZ), 0.05);
-               camera.position.lerp(new THREE.Vector3(seat[0] * 1.3, 35, seat[2] * 1.3), 0.05);
-           } else {
-               // Gentle zoom back out to center stage when nothing is active
-               controls.target.lerp(new THREE.Vector3(0, 5, 0), 0.05);
-               camera.position.lerp(new THREE.Vector3(0, 45, -60), 0.05);
-           }
+            // Normal stadium zoom out back to center
+            controls.target.lerp(new THREE.Vector3(0, 5, 0), 0.05);
+            camera.position.lerp(new THREE.Vector3(0, 45, -60), 0.05);
         }
         controls.minDistance = 20;
      }
@@ -675,7 +661,7 @@ export default function App() {
               setIsFpv={setIsFpv}
               requestPath={requestPath}
             />
-            <CameraController isFpv={isFpv} seat={selectedSeat} mappedPath={mappedPath} />
+            <CameraController isFpv={isFpv} seat={selectedSeat} mappedPath={mappedPath} isFollowingPath={isFollowingPath} />
           </Suspense>
 
           <OrbitControls 
@@ -861,7 +847,7 @@ export default function App() {
 
             {/* UNIFIED SIDEBAR SEAT MENU */}
             {selectedSeat && (
-               <div className="pointer-events-auto absolute bottom-6 left-[calc(50%-60px)] -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full backdrop-blur-xl border border-black/25 shadow-2xl animate-in slide-in-from-bottom-8 z-20 bg-white/90 text-black">
+               <div className="pointer-events-auto absolute bottom-6 left-[40%] -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full backdrop-blur-xl border border-black/25 shadow-2xl animate-in slide-in-from-bottom-8 z-20 bg-white/90 text-black">
                   {/* Gold AI Sparkle */}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#FEBE10" stroke="#d4a017" strokeWidth="0.5"/>
@@ -872,7 +858,7 @@ export default function App() {
                   {/* SEAT INFO TEXT */}
                   <div className="flex flex-col items-center border-r border-black/20 pr-4">
                      <span className="font-black text-[9px] uppercase tracking-widest text-slate-800 whitespace-nowrap">My Seat</span>
-                     <span className="text-[11px] font-mono font-bold text-black opacity-90">X: {selectedSeat[0].toFixed(1)} / Z: {selectedSeat[2].toFixed(1)}</span>
+                     <span className="text-[11px] font-mono font-bold text-black opacity-90 whitespace-nowrap">X: {selectedSeat[0].toFixed(1)} / Z: {selectedSeat[2].toFixed(1)}</span>
                   </div>
 
                   {/* NEIGHBORS METRIC */}
@@ -911,18 +897,21 @@ export default function App() {
                      <>
                         <div className="w-[1px] h-6 bg-black/20" />
                         <button 
-                            onClick={() => setIsFollowingPath(true)}
+                            onClick={() => { setIsFollowingPath(true); setIsFpv(true); }}
                             disabled={isFollowingPath}
                             className={`flex items-center gap-2 py-2.5 px-5 rounded-full font-black uppercase text-[9px] tracking-widest transition-all whitespace-nowrap border-2 ${
                               isFollowingPath 
                                 ? 'bg-emerald-200 text-emerald-800 border-emerald-400 cursor-not-allowed shadow-md' 
-                                : 'bg-[#FEBE10] text-black border-[#d4a017] shadow-[0_0_20px_rgba(254,190,16,0.6),0_4px_12px_rgba(0,0,0,0.15)] hover:scale-105 active:scale-95 hover:shadow-[0_0_30px_rgba(254,190,16,0.9)] animate-pulse'
+                                : 'bg-[#111] text-white border-[#FEBE10] shadow-[0_0_20px_rgba(254,190,16,0.6),0_4px_12px_rgba(0,0,0,0.15)] hover:bg-black hover:scale-105 active:scale-95 hover:shadow-[0_0_30px_rgba(254,190,16,0.9)] animate-pulse'
                             }`}
                         >
                             {isFollowingPath 
                               ? <><Footprints size={12} className="animate-bounce" /> Navigating...</> 
                               : <>
-                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z"/></svg>
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#FEBE10" stroke="#d4a017" strokeWidth="0.5"/>
+                                    <path d="M19 2L19.75 4.75L22.5 5.5L19.75 6.25L19 9L18.25 6.25L15.5 5.5L18.25 4.75L19 2Z" fill="#FEBE10"/>
+                                  </svg>
                                   PHYSICAL TRAVERSAL
                                 </>
                             }
@@ -990,6 +979,7 @@ export default function App() {
                        const rz = parseFloat((Math.sin(angle) * r).toFixed(1));
                        const ry = parseFloat((rowFactor * 18).toFixed(1));
                        setSelectedSeat([rx, ry, rz]);
+                       setIsFpv(true);
                      }
                      setIsChatOpen(true);
                      setChatMessages(prev => [
