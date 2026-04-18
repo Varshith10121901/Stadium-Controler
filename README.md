@@ -6,6 +6,22 @@
 
 SwarmAI is a decentralized multi-agent system where every attendee's device becomes an intelligent node. The SwarmAI Assistant is powered by **Google Gemini 2.5 Flash Lite**, processing every attendee message with context-enriched prompting and full stadium topology awareness.
 
+## Live Deployment (Google Cloud Run)
+
+**Fully deployed on Google Cloud Run** — Production-ready backend and frontend.
+
+| Service | URL | Status |
+|---|---|---|
+| **Backend API** | [swarmai-backend-820901016043.us-central1.run.app](https://swarmai-backend-820901016043.us-central1.run.app) | Live |
+| **API Docs** | [swarmai-backend-820901016043.us-central1.run.app/docs](https://swarmai-backend-820901016043.us-central1.run.app/docs) | Live |
+| **Frontend** | Deploying | In Progress |
+
+**Google Services used in production:**
+- **Google Cloud Run** — Full production deployment of FastAPI backend + Next.js frontend
+- **Google Gemini 2.5 Flash Lite** — Real-time Swarm Assistant (3 AI endpoints)
+
+This demonstrates end-to-end deployment on Google Cloud infrastructure, not just a local demo.
+
 ## Google Services Deep Integration
 
 SwarmAI uses **Google Gemini AI** (`google-generativeai` SDK) across **3 dedicated endpoints**:
