@@ -17,6 +17,8 @@ import {
   RotateCcw, TrendingDown, Radio, Eye, Shield,
   Gauge, ArrowUpRight, ArrowDownRight, Layers, Cpu, MousePointer2
 } from 'lucide-react';
+import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 export default function DashboardPage() {
   const {
@@ -31,6 +33,8 @@ export default function DashboardPage() {
   const [isEmergency, setIsEmergency] = useState(false);
   const [hasDeployedBulk, setHasDeployedBulk] = useState(false);
   const [simSpeed, setSimSpeedLocal] = useState(1);
+  const [isFirebaseConnected, setIsFirebaseConnected] = useState(false);
+  const [metricsFirebase, setMetricsFirebase] = useState<any>(null);
 
   // Audience manipulation state
   const mouseHover = useRef<{x: number, y: number} | null>(null);
@@ -52,6 +56,24 @@ export default function DashboardPage() {
       setTimeout(() => fetchStadium().then(setStadium).catch(() => {}), 3000);
     });
     startSimulation(100).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    try {
+      const q = query(collection(db, "swarm_metrics"), orderBy("timestamp", "desc"), limit(1));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        if (!snapshot.empty) {
+          const latest = snapshot.docs[0].data();
+          setMetricsFirebase(latest);
+          setIsFirebaseConnected(true);
+        }
+      }, (error) => {
+        setIsFirebaseConnected(false);
+      });
+      return () => unsubscribe();
+    } catch (err) {
+      console.warn("[Firebase] Config missing, proceeding with localized Realtime WebSockets.");
+    }
   }, []);
 
   useEffect(() => {
@@ -320,6 +342,11 @@ export default function DashboardPage() {
             <p className="text-[10px] text-emerald-500 font-mono mt-1 tracking-widest uppercase flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Metrics Active — TICK #{metrics.tick}
             </p>
+            {isFirebaseConnected && (
+              <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 mt-3 rounded-lg text-[9px] font-mono font-bold tracking-widest uppercase flex items-center gap-2 w-max">
+                ✅ Connected to Firebase Firestore (Real-time)
+              </div>
+            )}
           </div>
         </div>
 
