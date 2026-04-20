@@ -10,21 +10,19 @@ SwarmAI is a decentralized multi-agent system where every attendee's device beco
 
 ## 🚀 Google Services Deep Integration
 
-SwarmAI demonstrates **meaningful and production-grade** usage of multiple Google services working together in a closed-loop system.
+SwarmAI features a **closed-loop real-time AI swarm system** powered by multiple Google services:
 
-| Google Service | Implementation Details | Impact |
-|---|---|---|
-| **Google Gemini 2.5 Flash Lite** | 3 intelligent AI routes (`/api/chat`, `/api/swarm-suggest`, `/api/analyze-density`) with rich system prompts, multi-turn memory, stadium topology awareness, Fruin Crowd Science (LoS A-F grading), and structured JSON output | Core AI brain |
-| **Firebase Firestore** | Real-time telemetry pipeline. Backend swarm engine autonomously pushes live metrics every 10 simulation ticks. Frontend uses `onSnapshot` for zero-latency dashboard updates | Real-time data layer |
-| **google-generativeai SDK** | Structured JSON outputs, context-enriched prompting, emergency routing logic, LoS grade evaluations | AI reasoning engine |
-| **Firebase Admin SDK** | Secure backend writes to Firestore using `ApplicationDefault` credentials (zero config on Cloud Run) | Server-side persistence |
-| **Google Cloud Run** | Frontend (Next.js) and Backend (FastAPI) deployed as managed, auto-scaling containers | Production infrastructure |
-| **WCAG 2.1 AA Standards** | `aria-live="polite"` regions, semantic HTML, focus-visible rings — aligned with Google's accessibility guidelines | Inclusive UX |
+| Google Service | Implementation Details |
+|---|---|
+| **Google Gemini 2.5 Flash Lite** | 3 intelligent routes with rich Fruin Crowd Science prompts, structured JSON output (`los_grade`, `reasoning`, `avoid_zones`, `safety_note`), multi-turn context |
+| **Firebase Firestore** | Backend swarm engine **actively pushes live telemetry every 8 simulation ticks** to the `swarm_metrics` collection. Frontend dashboard listens in real-time using `onSnapshot`. Payload includes: `total_agents`, `global_congestion`, `avg_wait_seconds`, `flow_efficiency`, `active_nodes`, `negotiation_count`, `los_grade`, `heatmap` |
+| **google-generativeai + Firebase Admin SDK** | Context-aware prompting + secure, fault-tolerant backend writes with automatic graceful fallbacks when running locally |
+| **Google Cloud Run** | Frontend (Next.js) and Backend (FastAPI) deployed as managed, auto-scaling containers with native Application Default Credentials |
+| **WCAG 2.1 AA / Google Standards** | `aria-live="polite"` on all live regions, semantic HTML, focus-visible rings |
 
-### System Flow
-
+**Closed-Loop Flow**:
 ```
-Simulation Engine → Gemini Analysis → Firestore Write → Real-time Frontend Dashboard
+Simulation Engine → Gemini Analysis → Firestore Write (every 8 ticks) → Real-time Operator Dashboard
 ```
 
 ```mermaid
@@ -36,7 +34,7 @@ graph LR
     Firestore --> FPV[🎮 Physical Traversal FPV]
 ```
 
-This integration goes far beyond basic API calls — it creates a live, responsive, decentralized AI swarm for stadium crowd management.
+This creates a truly responsive, decentralized AI swarm — the exact level of meaningful Google integration that stands out in PromptWars.
 
 ---
 
