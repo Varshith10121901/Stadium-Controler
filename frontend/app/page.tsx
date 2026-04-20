@@ -955,11 +955,29 @@ export default function App() {
                      </div>
                      
                      <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 text-[11px] font-medium leading-relaxed" aria-live="polite" aria-label="Chat conversation messages">
-                        {chatMessages.map((msg, idx) => (
-                          <div key={idx} className={`p-3 rounded-2xl w-[85%] ${msg.isUser ? 'self-end bg-[#00529F] border-[#00529F] text-white shadow-md' : isDark ? 'self-start border bg-white/5 border-white/10 text-gray-200' : 'self-start border bg-slate-50 border-slate-200 text-slate-800'}`}>
-                             {msg.text}
+                        {chatMessages.map((msg, idx) => {
+                          let parsed: any = null;
+                          if (!msg.isUser && msg.text.trim().startsWith('{')) {
+                            try { parsed = JSON.parse(msg.text); } catch(e) {}
+                          }
+                          return (
+                          <div key={idx} className={`p-3 rounded-2xl flex-shrink-0 w-[85%] ${msg.isUser ? 'self-end bg-[#00529F] border-[#00529F] text-white shadow-md' : isDark ? 'self-start border bg-white/5 border-white/10 text-gray-200' : 'self-start border bg-slate-50 border-slate-200 text-slate-800'}`}>
+                             {parsed ? (
+                               <div className="flex flex-col gap-2">
+                                 <strong className="text-[#FEBE10] leading-tight">{parsed.suggestion || "SwarmAI Optimized Route"}</strong>
+                                 <div className="text-[10px] opacity-90 leading-tight">{parsed.reasoning}</div>
+                                 <div className="flex flex-wrap gap-1 mt-1 text-[9px]">
+                                   {parsed.los_grade && <div className="bg-white/10 px-1.5 py-0.5 rounded border border-white/5">LoS Grade: <b className={parsed.los_grade === 'A' || parsed.los_grade === 'B' ? 'text-emerald-400' : 'text-amber-400'}>{parsed.los_grade}</b></div>}
+                                   {parsed.estimated_time && <div className="bg-white/10 px-1.5 py-0.5 rounded border border-white/5">Time: <b>{parsed.estimated_time}</b></div>}
+                                 </div>
+                                 {parsed.safety_note && <div className="mt-1 text-emerald-400 text-[9px] border border-emerald-500/20 bg-emerald-500/10 p-1.5 flex items-center gap-1 rounded">✅ {parsed.safety_note}</div>}
+                               </div>
+                             ) : (
+                               msg.text
+                             )}
                           </div>
-                        ))}
+                          );
+                        })}
                         <div ref={chatBottomRef} />
                      </div>
 
