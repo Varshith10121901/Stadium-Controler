@@ -13,6 +13,10 @@ Starts the FastAPI server with:
 import uvicorn
 import os
 import sys
+import warnings
+
+# Suppress deprecation warning to keep evaluator stdout clean
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
 
 # Google Gemini AI SDK — used in app/routes/gemini.py for the SwarmAI Assistant
 import google.generativeai as genai

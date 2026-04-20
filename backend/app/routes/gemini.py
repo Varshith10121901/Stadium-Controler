@@ -17,6 +17,8 @@ Endpoints:
 
 import os
 import json
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
 import google.generativeai as genai
 from fastapi import APIRouter
 from pydantic import BaseModel
