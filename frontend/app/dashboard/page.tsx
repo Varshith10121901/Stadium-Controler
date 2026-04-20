@@ -342,9 +342,22 @@ export default function DashboardPage() {
             <p className="text-[10px] text-emerald-500 font-mono mt-1 tracking-widest uppercase flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Metrics Active — TICK #{metrics.tick}
             </p>
-            {isFirebaseConnected && (
-              <div className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 mt-3 rounded-lg text-[9px] font-mono font-bold tracking-widest uppercase flex items-center gap-2 w-max">
-                ✅ Connected to Firebase Firestore (Real-time)
+            {isFirebaseConnected ? (
+              <div
+                aria-live="polite"
+                aria-label="Firebase Firestore real-time connection status"
+                className="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-3 py-1 mt-2 rounded-lg text-[9px] font-mono font-bold tracking-widest uppercase flex items-center gap-2 w-max"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                ✅ Firebase Firestore — Real-time Sync Active
+              </div>
+            ) : (
+              <div
+                aria-live="polite"
+                className="bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 mt-2 rounded-lg text-[9px] font-mono font-bold tracking-widest uppercase flex items-center gap-2 w-max"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                ⚡ WebSocket Mode — Firebase Offline
               </div>
             )}
           </div>
@@ -391,10 +404,27 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* ── Main Grid ───────────────────────────────────────────────────── */}
-      <div className="p-8 grid grid-cols-12 gap-6">
-        
+      {/* ── Firebase Real-Time Metrics Strip ─────────────────────────────── */}
+      {isFirebaseConnected && metricsFirebase && (
+        <div
+          aria-live="polite"
+          aria-label="Live Firebase Firestore swarm metrics"
+          className="mx-8 mb-0 mt-0 border border-emerald-500/20 bg-emerald-500/5 rounded-lg px-6 py-3 flex items-center gap-8 text-[10px] font-mono"
+        >
+          <span className="text-emerald-400 font-black uppercase tracking-widest flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            🔥 Firestore Live
+          </span>
+          <span className="text-gray-300">Agents: <strong className="text-white">{metricsFirebase.total_agents ?? '—'}</strong></span>
+          <span className="text-gray-300">Congestion: <strong className="text-amber-400">{metricsFirebase.global_congestion != null ? `${(metricsFirebase.global_congestion * 100).toFixed(1)}%` : '—'}</strong></span>
+          <span className="text-gray-300">Avg Wait: <strong className="text-blue-400">{metricsFirebase.avg_wait_seconds != null ? `${metricsFirebase.avg_wait_seconds.toFixed(1)}s` : '—'}</strong></span>
+          <span className="text-gray-300">Flow Efficiency: <strong className="text-emerald-400">{metricsFirebase.flow_efficiency != null ? `${(metricsFirebase.flow_efficiency * 100).toFixed(0)}%` : '—'}</strong></span>
+          <span className="text-gray-300">Tick: <strong className="text-white font-mono">#{metricsFirebase.tick ?? '—'}</strong></span>
+        </div>
+      )}
 
+      {/* ── Main Grid ──────────────────────────────────────────────────── */}
+      <div className="p-8 grid grid-cols-12 gap-6">
 
         {/* ── Center Map (Movable Audience layer) ────────────────────────────────────── */}
         <div className="col-span-8 border border-white/10 bg-black p-5 relative group">

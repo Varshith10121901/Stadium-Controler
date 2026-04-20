@@ -201,23 +201,39 @@ class SwarmEngine:
                         }
                     })
 
-                # ── Step 9: Sync real-time metrics safely to Google Firebase ──
-                if self.tick % 10 == 0:
+                # ── Step 9: Closed-Loop Google Firebase Sync (every 8 ticks) ──────
+                if self.tick % 8 == 0:
                     try:
                         from app.firebase import db
                         from firebase_admin import firestore
                         if db is not None:
+                            cong = self.current_metrics.get("congestion_score", 0.0)
+                            flow = self.current_metrics.get("flow_efficiency", 0.0)
+                            
+                            # Determine LoS grade from congestion score
+                            if cong < 0.2:   los = "A"
+                            elif cong < 0.4: los = "B"
+                            elif cong < 0.6: los = "C"
+                            elif cong < 0.8: los = "D"
+                            elif cong < 0.95: los = "E"
+                            else:            los = "F"
+
                             doc_ref = db.collection("swarm_metrics").document()
                             doc_ref.set({
                                 "timestamp": firestore.SERVER_TIMESTAMP,
                                 "tick": self.tick,
                                 "total_agents": len(self.agents),
                                 "avg_wait_seconds": self.current_metrics.get("avg_wait_time", 0.0),
-                                "global_congestion": self.current_metrics.get("congestion_score", 0.0),
-                                "flow_efficiency": self.current_metrics.get("flow_efficiency", 0.0)
+                                "global_congestion": cong,
+                                "flow_efficiency": flow,
+                                "active_nodes": len([a for a in self.agents.values() if a.status == "moving"]),
+                                "negotiation_count": getattr(self, "negotiation_count", 0),
+                                "los_grade": los,
+                                "heatmap": self._get_downsampled_density() or {}
                             })
-                    except Exception:
-                        pass
+                            print(f"✅ [Firebase] Metrics synced at tick {self.tick} (LoS: {los})")
+                    except Exception as e:
+                        pass  # Firestore offline — graceful fallback
 
 
             except Exception as e:
