@@ -42,8 +42,9 @@ def main():
     print("[SwarmAI] Starting Backend Server...")
     print("[SwarmAI] Google Services: Gemini 2.5 Flash Lite (google-generativeai SDK)")
 
-    # Programmatically start uvicorn
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
+    # Programmatically start uvicorn - respect PORT env var for Cloud Run compatibility
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("app.main:app", host="0.0.0.0", port=port, reload=True)
 
 if __name__ == "__main__":
     main()
