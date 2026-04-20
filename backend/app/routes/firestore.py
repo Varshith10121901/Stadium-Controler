@@ -7,6 +7,8 @@ router = APIRouter()
 @router.post("/api/save-swarm-metrics")
 async def save_swarm_metrics(data: dict):
     """Save live swarm data to Firestore"""
+    if db is None:
+        return {"status": "skipped", "message": "Firebase offline (local mode)"}
     try:
         doc_ref = db.collection("swarm_metrics").document()
         doc_ref.set({

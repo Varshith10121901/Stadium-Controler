@@ -201,6 +201,25 @@ class SwarmEngine:
                         }
                     })
 
+                # ── Step 9: Sync real-time metrics safely to Google Firebase ──
+                if self.tick % 10 == 0:
+                    try:
+                        from app.firebase import db
+                        from firebase_admin import firestore
+                        if db is not None:
+                            doc_ref = db.collection("swarm_metrics").document()
+                            doc_ref.set({
+                                "timestamp": firestore.SERVER_TIMESTAMP,
+                                "tick": self.tick,
+                                "total_agents": len(self.agents),
+                                "avg_wait_seconds": self.current_metrics.get("avg_wait_time", 0.0),
+                                "global_congestion": self.current_metrics.get("congestion_score", 0.0),
+                                "flow_efficiency": self.current_metrics.get("flow_efficiency", 0.0)
+                            })
+                    except Exception:
+                        pass
+
+
             except Exception as e:
                 print(f"[SwarmEngine] Tick {self.tick} error: {e}")
 

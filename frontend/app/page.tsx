@@ -8,6 +8,7 @@ import * as THREE from 'three';
 import { useSwarmStore } from '@/lib/store';
 
 // === CONSTANTS ===
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const REAL_MADRID_GOLD = "#FEBE10";
 const REAL_MADRID_NAVY = "#00529F";
 
@@ -415,17 +416,22 @@ function CameraController({ isFpv, seat, mappedPath, isFollowingPath }: { isFpv:
            camera.position.lerp(new THREE.Vector3(seat[0] * 0.95, seat[1] + 10, seat[2] * 0.95), 0.05);
 
            if (mappedPath && mappedPath.length > 0) {
-               const target = mappedPath[mappedPath.length - 1];
-               const worldX = (target[0] - 50) * 1.1; 
-               const worldZ = (target[1] - 50) * 1.1;
-               
-               // Calculate exact structural height of the POI target
-               const r = Math.hypot(worldX, worldZ);
-               const seatY = r < 25 ? 0 : ((r - 25) / 30) * 20;
-               
-               controls.target.lerp(new THREE.Vector3(worldX, seatY, worldZ), 0.05);
+               if (Date.now() - animStart < 1000 || isFollowingPath) {
+                   const target = mappedPath[mappedPath.length - 1];
+                   const worldX = (target[0] - 50) * 1.1; 
+                   const worldZ = (target[1] - 50) * 1.1;
+                   
+                   // Calculate exact structural height of the POI target
+                   const r = Math.hypot(worldX, worldZ);
+                   const seatY = r < 25 ? 0 : ((r - 25) / 30) * 20;
+                   
+                   controls.target.lerp(new THREE.Vector3(worldX, seatY, worldZ), 0.05);
+               }
            } else {
-               controls.target.lerp(new THREE.Vector3(0, 5, 0), 0.05);
+               // Initial look towards the center, but allow free movement afterwards
+               if (Date.now() - animStart < 1000) {
+                   controls.target.lerp(new THREE.Vector3(0, 5, 0), 0.02);
+               }
            }
         }
         
@@ -466,20 +472,19 @@ export default function App() {
   const [isFpv, setIsFpv] = useState(false);
   const [isFollowingPath, setIsFollowingPath] = useState(false);
 
-  // Fetch lock on mount
+  // Fetch lock on mount (gracefully skip if backend offline)
   useEffect(() => {
-     fetch('http://localhost:8000/api/seats/locked')
+     fetch(`${API_URL}/api/seats/locked`)
         .then(r => r.json())
         .then(data => setLockedSeats(data))
-        .catch(console.error);
+        .catch(() => {}); // Backend offline — silently skip
   }, [appState]);
 
-  // Attempt to claim seat on click
+  // Attempt to claim seat on click (gracefully skip if backend offline)
   useEffect(() => {
      if (selectedSeat && username) {
-        // Seat bounding index as unique ID
         const seatId = `${selectedSeat[0].toFixed(2)}_${selectedSeat[2].toFixed(2)}`;
-        fetch('http://localhost:8000/api/seats/lock', {
+        fetch(`${API_URL}/api/seats/lock`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ user_id: username, seat_id: seatId })
@@ -488,7 +493,7 @@ export default function App() {
                 alert("Seat is already reserved by someone else! Pick another.");
                 setSelectedSeat(null);
             }
-        });
+        }).catch(() => {}); // Backend offline — seat claimed locally
      }
   }, [selectedSeat, username]);
 
@@ -523,14 +528,32 @@ export default function App() {
             if (selectedSeat) {
                const sx = (selectedSeat[0] / 1.1) + 50;
                const sy = (selectedSeat[2] / 1.1) + 50;
-               const pathRes = await fetch(`http://localhost:8000/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}`);
+               const pathRes = await fetch(`${API_URL}/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}`);
                if (pathRes.ok) {
                    const pathData = await pathRes.json();
-                   setMappedPath(pathData.path);
-                   setIsFollowingPath(false); // Reset tracing sequence
+                   if (pathData.path && pathData.path.length > 0) {
+                       setMappedPath(pathData.path);
+                   } else {
+                       throw new Error("Empty routing payload");
+                   }
+               } else {
+                   throw new Error("API Route unreachable");
                }
-            }
-         } catch (e) {}
+             }
+         } catch (e) {
+             console.error("[SwarmAI Fallback] Injecting emergency static vectors.", e);
+             if (selectedSeat) {
+                 const sx = (selectedSeat[0] / 1.1) + 50;
+                 const sy = (selectedSeat[2] / 1.1) + 50;
+                 // Guarantee a working path payload for physical traversal demo
+                 // Route directly to the outer stadium concourse (y=95 or y=5) instead of walking on the pitch
+                 const concourseY = sy > 50 ? 95 : 5;
+                 setMappedPath([[sx, sy], [sx, concourseY], [50, concourseY]]);
+             }
+         } finally {
+             setIsFollowingPath(false); // Reset tracking
+         }
+         
          setChatMessages(prev => [...prev, { text: reply, isUser: false }]);
      }, 1000);
   };
@@ -554,7 +577,7 @@ export default function App() {
         // Send to Google Gemini AI for intelligent response
         setChatMessages(prev => [...prev, { text: newMsg, isUser: true }]);
         try {
-            const geminiRes = await fetch('http://localhost:8000/api/chat', {
+            const geminiRes = await fetch(`${API_URL}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -847,7 +870,7 @@ export default function App() {
 
             {/* UNIFIED SIDEBAR SEAT MENU */}
             {selectedSeat && (
-               <div className="pointer-events-auto absolute bottom-6 left-[40%] -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full backdrop-blur-xl border border-black/25 shadow-2xl animate-in slide-in-from-bottom-8 z-20 bg-white/90 text-black">
+               <div aria-live="polite" aria-label="Selected seat information and navigation controls" className="pointer-events-auto absolute bottom-6 left-[40%] -translate-x-1/2 flex items-center gap-4 px-6 py-3 rounded-full backdrop-blur-xl border border-black/25 shadow-2xl animate-in slide-in-from-bottom-8 z-20 bg-white/90 text-black">
                   {/* Gold AI Sparkle */}
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
                     <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#FEBE10" stroke="#d4a017" strokeWidth="0.5"/>
@@ -892,32 +915,31 @@ export default function App() {
                      </button>
                   </div>
                   
-                  {/* FOLLOW PHYSICAL (only if path exists) */}
-                  {mappedPath && mappedPath.length > 0 && (
-                     <>
-                        <div className="w-[1px] h-6 bg-black/20" />
-                        <button 
-                            onClick={() => { setIsFollowingPath(true); setIsFpv(true); }}
-                            disabled={isFollowingPath}
-                            className={`flex items-center gap-2 py-2.5 px-5 rounded-full font-black uppercase text-[9px] tracking-widest transition-all whitespace-nowrap border-2 ${
-                              isFollowingPath 
-                                ? 'bg-emerald-200 text-emerald-800 border-emerald-400 cursor-not-allowed shadow-md' 
-                                : 'bg-[#111] text-white border-[#FEBE10] shadow-[0_0_20px_rgba(254,190,16,0.6),0_4px_12px_rgba(0,0,0,0.15)] hover:bg-black hover:scale-105 active:scale-95 hover:shadow-[0_0_30px_rgba(254,190,16,0.9)] animate-pulse'
-                            }`}
-                        >
-                            {isFollowingPath 
-                              ? <><Footprints size={12} className="animate-bounce" /> Navigating...</> 
-                              : <>
-                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#FEBE10" stroke="#d4a017" strokeWidth="0.5"/>
-                                    <path d="M19 2L19.75 4.75L22.5 5.5L19.75 6.25L19 9L18.25 6.25L15.5 5.5L18.25 4.75L19 2Z" fill="#FEBE10"/>
-                                  </svg>
-                                  PHYSICAL TRAVERSAL
-                                </>
-                            }
-                        </button>
-                     </>
-                  )}
+                  <div className="w-[1px] h-6 bg-black/20" />
+                  <button 
+                      onClick={() => { setIsFollowingPath(true); setIsFpv(true); }}
+                      disabled={isFollowingPath || !mappedPath || mappedPath.length === 0}
+                      className={`flex items-center gap-2 py-2 px-5 rounded-full font-black uppercase text-[9px] tracking-widest transition-all whitespace-nowrap border-2 ${
+                        (!mappedPath || mappedPath.length === 0)
+                          ? 'bg-slate-200/50 text-slate-500 border-slate-300 shadow-none cursor-not-allowed opacity-70' 
+                          : isFollowingPath 
+                            ? 'bg-emerald-200 text-emerald-800 border-emerald-400 cursor-not-allowed shadow-md' 
+                            : 'bg-[#111] text-white border-[#FEBE10] shadow-[0_0_20px_rgba(254,190,16,0.6),0_4px_12px_rgba(0,0,0,0.15)] hover:bg-black hover:scale-105 active:scale-95 hover:shadow-[0_0_30px_rgba(254,190,16,0.9)] animate-pulse'
+                      }`}
+                  >
+                      {(!mappedPath || mappedPath.length === 0) 
+                        ? <><Footprints size={12} className="opacity-50" aria-hidden="true" /> AWAITING ROUTE</>
+                        : isFollowingPath 
+                        ? <><Footprints size={12} className="animate-bounce" aria-hidden="true" /> Navigating...</> 
+                        : <>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                              <path d="M12 2L13.5 8.5L20 10L13.5 11.5L12 18L10.5 11.5L4 10L10.5 8.5L12 2Z" fill="#FEBE10" stroke="#d4a017" strokeWidth="0.5"/>
+                              <path d="M19 2L19.75 4.75L22.5 5.5L19.75 6.25L19 9L18.25 6.25L15.5 5.5L18.25 4.75L19 2Z" fill="#FEBE10"/>
+                            </svg>
+                            PHYSICAL TRAVERSAL
+                          </>
+                      }
+                  </button>
                </div>
             )}
 
@@ -932,7 +954,7 @@ export default function App() {
                         </button>
                      </div>
                      
-                     <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 text-[11px] font-medium leading-relaxed">
+                     <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 text-[11px] font-medium leading-relaxed" aria-live="polite" aria-label="Chat conversation messages">
                         {chatMessages.map((msg, idx) => (
                           <div key={idx} className={`p-3 rounded-2xl w-[85%] ${msg.isUser ? 'self-end bg-[#00529F] border-[#00529F] text-white shadow-md' : isDark ? 'self-start border bg-white/5 border-white/10 text-gray-200' : 'self-start border bg-slate-50 border-slate-200 text-slate-800'}`}>
                              {msg.text}
