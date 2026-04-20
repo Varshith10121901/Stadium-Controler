@@ -34,7 +34,7 @@ graph LR
     Firestore --> FPV[🎮 Physical Traversal FPV]
 ```
 
-This creates a truly responsive, decentralized AI swarm — the exact level of meaningful Google integration that stands out in PromptWars.
+**Closed-Loop Real-Time Pipeline:** The SwarmEngine actively pushes live telemetry (total agents, congestion, heatmap, LoS grades) to Firebase Firestore every 8 simulation ticks. The operator dashboard consumes this data instantly via `onSnapshot` listeners, while Gemini provides intelligent structured suggestions using 1980 Fruin Crowd Science. All running on Google Cloud Run.
 
 ---
 
