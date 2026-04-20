@@ -41,7 +41,8 @@ Fully production-grade deployment on Google Cloud and Firebase:
 
 | Service | Infrastructure | URL | Status |
 |---|---|---|---|
-| **Frontend UI** | Firebase Hosting | [prompt-wars-493408.web.app](https://prompt-wars-493408.web.app/) | ✅ Live |
+| **Frontend UI (Primary)** | Firebase Hosting | [prompt-wars-493408.web.app](https://prompt-wars-493408.web.app/) | ✅ Live |
+| **Frontend UI (Legacy)** | Firebase Hosting | [prompt-wars-493408.firebaseapp.com](https://prompt-wars-493408.firebaseapp.com/) | ✅ Live |
 | **Backend API** | Google Cloud Run | [swarmai-backend-...run.app](https://swarmai-backend-820901016043.us-central1.run.app/) | ✅ Live |
 | **Database** | Firebase Firestore | `swarm_metrics` collection | ✅ Active |
 
