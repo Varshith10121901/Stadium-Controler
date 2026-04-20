@@ -1,16 +1,16 @@
-# SwarmAI — Decentralized Attendee-Powered AI Swarm
+# SwarmAI Bernabéu Edition — Decentralized Attendee-Powered AI Swarm
 
 > **Built with [Google Antigravity](https://antigravity.withgoogle.com) | Powered by [Google Gemini AI](https://aistudio.google.com)**
 
 > **Turn 80,000 phones into a self-organizing AI swarm that eliminates stadium chaos.**
 
-SwarmAI is a decentralized multi-agent system where every attendee's device becomes an intelligent node. The SwarmAI Assistant is powered by **Google Gemini 2.5 Flash Lite**, processing every attendee message with context-enriched prompting and full stadium topology awareness.
+SwarmAI Bernabéu Edition is a decentralized multi-agent system where every attendee's device becomes an intelligent node. The SwarmAI Assistant is powered by **Google Gemini 2.5 Flash Lite**, processing every attendee message with context-enriched prompting and full stadium topology awareness.
 
 ---
 
 ## 🚀 Google Services Deep Integration
 
-SwarmAI features a **closed-loop real-time AI swarm system** powered by multiple Google services:
+SwarmAI Bernabéu Edition features a **closed-loop real-time AI swarm system** powered by multiple Google services:
 
 | Google Service | Implementation Details |
 |---|---|

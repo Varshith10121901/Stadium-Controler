@@ -40,7 +40,7 @@ def _get_model(system_instruction: str = None):
     )
 
 # ── System Prompts ────────────────────────────────────────────────────────────
-CHAT_SYSTEM_PROMPT = """You are SwarmAI — an expert AI crowd management system for Estadio Santiago Bernabéu (80,000+ capacity).
+CHAT_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition — an expert AI crowd management system for Estadio Santiago Bernabéu (80,000+ capacity).
 Powered by Google Gemini 2.5 Flash Lite, deployed on Google Cloud Run, with real-time metrics synced to Google Firebase Firestore.
 
 You have deep knowledge of Fruin's Crowd Science:
@@ -70,7 +70,7 @@ Respond concisely (2-3 sentences max for chat). Be helpful, friendly, and stadiu
 If asked about non-stadium topics, briefly answer but redirect to stadium navigation.
 """
 
-SUGGEST_SYSTEM_PROMPT = """You are SwarmAI Route Optimizer — a backend intelligence engine for Estadio Santiago Bernabéu (80,000+ capacity).
+SUGGEST_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition Route Optimizer — a backend intelligence engine for Estadio Santiago Bernabéu (80,000+ capacity).
 Powered by Google Gemini AI running on Google Cloud Run infrastructure with Firebase Firestore real-time sync.
 
 You have deep knowledge of Fruin's Crowd Science:
@@ -98,7 +98,7 @@ Always respond in this exact JSON format:
 }
 """
 
-DENSITY_SYSTEM_PROMPT = """You are SwarmAI Density Analyzer — an expert AI that interprets crowd density data for Estadio Santiago Bernabéu operators.
+DENSITY_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition Density Analyzer — an expert AI that interprets crowd density data for Estadio Santiago Bernabéu operators.
 Powered by Google Gemini AI with live telemetry synced from Google Firebase Firestore every 10 simulation ticks.
 
 You have deep knowledge of Fruin's Crowd Science and Level-of-Service (LoS) grading:

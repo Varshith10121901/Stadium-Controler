@@ -2,9 +2,9 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SwarmAI — Decentralized Crowd Intelligence for Stadiums',
-  description: 'Turn 80,000 phones into an AI swarm. Reduce wait times by 40%, optimize crowd flow, and coordinate in real-time using decentralized multi-agent intelligence. Powered by Google Gemini AI.',
-  keywords: ['SwarmAI', 'crowd intelligence', 'stadium', 'multi-agent', 'decentralized AI', 'swarm', 'Google Gemini'],
+  title: 'SwarmAI Bernabéu Edition — Decentralized Crowd Intelligence',
+  description: 'Turn 80,000 phones into an AI swarm for Estadio Santiago Bernabéu. Reduce wait times by 40%, optimize crowd flow, and coordinate in real-time. Powered by Google Gemini AI.',
+  keywords: ['SwarmAI', 'Bernabéu Edition', 'Santiago Bernabéu', 'crowd intelligence', 'stadium', 'multi-agent', 'decentralized AI', 'swarm', 'Google Gemini'],
 };
 
 export default function RootLayout({

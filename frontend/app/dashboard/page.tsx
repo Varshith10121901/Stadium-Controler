@@ -338,7 +338,11 @@ export default function DashboardPage() {
              <Shield size={20} className="text-[#FEBE10]" />
           </div>
           <div>
-            <h1 className="text-xl font-black uppercase tracking-[0.2em]">SwarmAI <span className="opacity-40">Operations</span></h1>
+            <h1 className="text-xl font-black uppercase tracking-[0.2em] flex items-center gap-2">
+              <span className="text-[#FEBE10]">SwarmAI</span>
+              <span className="text-white">Bernabéu Edition</span>
+              <span className="opacity-40 text-sm ml-2">Operations</span>
+            </h1>
             <p className="text-[10px] text-emerald-500 font-mono mt-1 tracking-widest uppercase flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" /> Live Metrics Active — TICK #{metrics.tick}
             </p>

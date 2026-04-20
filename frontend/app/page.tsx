@@ -499,7 +499,7 @@ export default function App() {
 
   // Chatbot State
   const [chatMessages, setChatMessages] = useState([
-    { text: "Welcome to SwarmAI! Click any seat block in the 3D stadium to claim it, or ask me for optimal routing directions.", isUser: false }
+    { text: "Welcome to SwarmAI Bernabéu Edition! Click any seat block in the 3D stadium to claim it, or ask me for optimal routing directions.", isUser: false }
   ]);
   const [inputValue, setInputValue] = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
@@ -593,7 +593,7 @@ export default function App() {
             else if (data.suggested_action === 'route_food') requestPath('concession');
             else if (data.suggested_action === 'route_exit') requestPath('gate');
         } catch {
-            setChatMessages(prev => [...prev, { text: "🧠 SwarmAI Gemini is processing... Try asking about restrooms, food, or exits for instant routing!", isUser: false }]);
+            setChatMessages(prev => [...prev, { text: "🧠 SwarmAI Bernabéu Edition is processing... Try asking about restrooms, food, or exits for instant routing!", isUser: false }]);
         }
         return;
     }
