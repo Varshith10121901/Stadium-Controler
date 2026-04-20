@@ -16,7 +16,8 @@ SwarmAI features a **true closed-loop real-time AI swarm system** powered by mul
 | **Google Gemini 2.5 Flash Lite**      | 3 intelligent endpoints (`chat`, `swarm-suggest`, `density-analysis`) with rich Fruin Crowd Science (LoS A–F) prompts, structured JSON outputs (`los_grade`, `reasoning`, `avoid_zones`, `safety_note`, `estimated_time`), and multi-turn context |
 | **Firebase Firestore**                | Backend `SwarmEngine` **actively pushes live telemetry every 8 simulation ticks** (`total_agents`, `global_congestion`, `avg_wait_seconds`, `active_nodes`, `heatmap`, `los_grade`). Frontend dashboard uses real-time `onSnapshot` listeners for instant updates |
 | **google-generativeai + Firebase Admin SDK** | Context-aware prompting + secure backend writes with graceful fallbacks |
-| **Google Cloud Run**                  | Both FastAPI backend and Next.js frontend deployed as auto-scaling managed containers with Application Default Credentials |
+| **Google Cloud Run**                  | FastAPI backend deployed as an auto-scaling managed container using Application Default Credentials |
+| **Firebase Hosting**                | Next.js frontend deployed for optimized global CDN delivery |
 
 **Closed-Loop Flow**:  
 Simulation Engine → Gemini Analysis → Firestore Write (every 8 ticks) → Real-time Operator Dashboard
@@ -34,15 +35,15 @@ graph LR
 
 ---
 
-## 🚀 Live Deployment (Google Cloud Run)
+## 🚀 Live Deployment
 
-Fully production-grade deployment on Google Cloud:
+Fully production-grade deployment on Google Cloud and Firebase:
 
-| Service | URL | Status |
-|---|---|---|
-| **Backend API** | [swarmai-backend-820901016043.us-central1.run.app](https://swarmai-backend-820901016043.us-central1.run.app) | ✅ Live |
-| **Frontend UI** | [swarmai-frontend-820901016043.us-central1.run.app](https://swarmai-frontend-820901016043.us-central1.run.app) | ✅ Live |
-| **Database** | Google Firebase Firestore (us-central1) — `swarm_metrics` collection | ✅ Active |
+| Service | Infrastructure | URL | Status |
+|---|---|---|---|
+| **Frontend UI** | Firebase Hosting | [prompt-wars-493408.web.app](https://prompt-wars-493408.web.app/) | ✅ Live |
+| **Backend API** | Google Cloud Run | [swarmai-backend-...run.app](https://swarmai-backend-820901016043.us-central1.run.app/) | ✅ Live |
+| **Database** | Firebase Firestore | `swarm_metrics` collection | ✅ Active |
 
 ---
 
