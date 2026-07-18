@@ -17,9 +17,23 @@ def main():
 
     # 1. Start Backend Server
     backend_dir = os.path.join(base_dir, "backend")
-    print("[SwarmAI Launcher] Starting Backend (FastAPI) server...")
+    
+    # Auto-detect virtualenv python interpreter
+    venv_python = None
+    if os.name == 'nt':
+        p = os.path.join(backend_dir, "venv", "Scripts", "python.exe")
+        if os.path.exists(p):
+            venv_python = p
+    else:
+        p = os.path.join(backend_dir, "venv", "bin", "python")
+        if os.path.exists(p):
+            venv_python = p
+
+    python_exe = venv_python if venv_python else sys.executable
+    print(f"[SwarmAI Launcher] Starting Backend (FastAPI) server using: {python_exe}...")
+    
     backend_proc = subprocess.Popen(
-        [sys.executable, "run.py"],
+        [python_exe, "run.py"],
         cwd=backend_dir,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
