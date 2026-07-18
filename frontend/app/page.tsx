@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useMemo, Suspense } from 'react';
+import Link from 'next/link';
 import { Shield, Wifi, Sun, Moon, MessageSquare, Send, X, MapPin, Search, Navigation, Lock, Users, Coins, Clock, Eye, EyeOff, Footprints, Coffee, DoorOpen, Waves } from 'lucide-react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Html, Line } from '@react-three/drei';
@@ -84,7 +85,6 @@ function PhysicalPOI({ position, label, color, waitTime, isHotspot }: { position
   );
 }
 
-// 5000 Seat InstancedMesh with Raycast interaction
 function SeatSelector({ 
    selectedSeat, setSelectedSeat, lockedSeats, isFpv, setIsFpv, requestPath 
 }: { 
@@ -95,65 +95,88 @@ function SeatSelector({
    setIsFpv: (v: boolean) => void,
    requestPath: (type: string) => void
 }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const dummy = useMemo(() => new THREE.Object3D(), []);
-  
-  const SEAT_COUNT = 5000;
-  
-  const points = useMemo(() => {
-    const arr = [];
-    for (let i = 0; i < SEAT_COUNT; i++) {
-         const angle = (i / SEAT_COUNT) * Math.PI * 2 * 15;
-         const rowFactor = (i % 15) / 15;
-         const currentRadius = 25 + ((55 - 25) * rowFactor);
-         const yBase = Math.pow(rowFactor, 1.5) * 20;
-         arr.push([Math.cos(angle) * currentRadius, yBase, Math.sin(angle) * currentRadius]);
-    }
-    return arr;
-  }, []);
+   const [mesh, setMesh] = useState<THREE.InstancedMesh | null>(null);
+   const dummy = useMemo(() => new THREE.Object3D(), []);
+   
+   const SECTS = 16;
+   const RWS = 15;
+   const SPR = 20;
+   const SEAT_COUNT = SECTS * RWS * SPR; // 4800
+   
+   const points = useMemo(() => {
+      const arr = [];
+      const sectorAngle = (Math.PI * 2) / SECTS;
+      const aisleGap = 0.08; // gap in radians for radial stairways
+      const playableAngle = sectorAngle - aisleGap;
 
-  useFrame(() => {
-     if (!meshRef.current) return;
-     for (let i = 0; i < SEAT_COUNT; i++) {
-        const p = points[i];
-        dummy.position.set(p[0], p[1], p[2]);
-        if (selectedSeat && selectedSeat[0] === p[0] && selectedSeat[2] === p[2]) {
-           dummy.scale.set(2, 2, 2); // Enlarge selected seat
-        } else {
-           dummy.scale.set(1, 1, 1);
-        }
-        dummy.updateMatrix();
-        meshRef.current.setMatrixAt(i, dummy.matrix);
-        
-        let color = new THREE.Color("#cbd5e1");
-        if (selectedSeat && selectedSeat[0] === p[0] && selectedSeat[2] === p[2]) color = new THREE.Color(REAL_MADRID_GOLD);
-        meshRef.current.setColorAt(i, color);
-     }
-     meshRef.current.instanceMatrix.needsUpdate = true;
-     if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
-  });
-
-  return (
-    <group>
-      <instancedMesh 
-         ref={meshRef} 
-         args={[undefined, undefined, SEAT_COUNT]}
-         onClick={(e) => {
-            e.stopPropagation();
-            if (e.instanceId !== undefined) {
-               setSelectedSeat(points[e.instanceId] as [number, number, number]);
+      for (let s = 0; s < SECTS; s++) {
+         for (let r = 0; r < RWS; r++) {
+            const rowFactor = r / (RWS - 1);
+            const radius = 26 + 28 * rowFactor;
+            // Linear scaling grandstand height
+            const y = Math.pow(rowFactor, 1.5) * 19.5;
+            
+            for (let j = 0; j < SPR; j++) {
+               const angle = s * sectorAngle + aisleGap / 2 + (j / (SPR - 1 || 1)) * playableAngle;
+               arr.push([Math.cos(angle) * radius, y, Math.sin(angle) * radius]);
             }
-         }}
-      >
-        <boxGeometry args={[0.8, 0.4, 0.8]} />
-        <meshStandardMaterial roughness={0.6} transparent opacity={0.4} />
-      </instancedMesh>
-      
-    </group>
-  );
+         }
+      }
+      return arr;
+   }, []);
+
+   useEffect(() => {
+      if (!mesh) return;
+      for (let i = 0; i < SEAT_COUNT; i++) {
+         const p = points[i];
+         if (!p) continue;
+         dummy.position.set(p[0], p[1], p[2]);
+         if (selectedSeat && selectedSeat[0] === p[0] && selectedSeat[2] === p[2]) {
+            dummy.scale.set(1.8, 1.8, 1.8); // Enlarge selected seat
+         } else {
+            dummy.scale.set(1, 1, 1);
+         }
+         dummy.updateMatrix();
+         mesh.setMatrixAt(i, dummy.matrix);
+         
+         let color = new THREE.Color("#cbd5e1");
+         if (selectedSeat && selectedSeat[0] === p[0] && selectedSeat[2] === p[2]) {
+            color = new THREE.Color(REAL_MADRID_GOLD);
+         } else {
+            // Give slightly varied coloring to sections for extra premium stadium feel
+            const sectorIdx = Math.floor(i / (RWS * SPR));
+            if (sectorIdx % 2 === 0) {
+               color = new THREE.Color("#64748b"); // Slate gray section
+            } else {
+               color = new THREE.Color("#475569"); // Darker slate section
+            }
+         }
+         mesh.setColorAt(i, color);
+      }
+      mesh.instanceMatrix.needsUpdate = true;
+      if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
+   }, [mesh, selectedSeat, points, dummy]);
+
+   return (
+     <group>
+       <instancedMesh 
+          ref={setMesh} 
+          args={[undefined, undefined, SEAT_COUNT]}
+          onClick={(e) => {
+             e.stopPropagation();
+             if (e.instanceId !== undefined) {
+                setSelectedSeat(points[e.instanceId] as [number, number, number]);
+             }
+          }}
+       >
+         <boxGeometry args={[0.6, 0.35, 0.6]} />
+         <meshStandardMaterial roughness={0.6} transparent opacity={0.8} />
+       </instancedMesh>
+     </group>
+   );
 }
 
-function Swarm({ count = 3000, isDark, isEmergency }: { count?: number, isDark: boolean, isEmergency?: boolean }) {
+function Swarm({ count = 500, isDark, isEmergency }: { count?: number, isDark: boolean, isEmergency?: boolean }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const dummy = useMemo(() => new THREE.Object3D(), []);
   
@@ -335,14 +358,74 @@ function Pitch({ isRetracted, seat, mappedPath, isFollowingPath, onCompletePath 
 
   return (
     <group ref={pitchRef}>
+      {/* ── Grass Pitch Surface ── */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[25, 40]} />
-        <meshStandardMaterial color="#0b2b13" roughness={0.8} />
+        <meshStandardMaterial color="#14532d" roughness={0.95} metalness={0.05} />
       </mesh>
-      <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <boxGeometry args={[23, 38, 0.001]} />
-        <meshBasicMaterial color="#ffffff" opacity={0.6} transparent wireframe />
+      
+      {/* ── Pitch Boundary White Lines ── */}
+      <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[23, 38]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent wireframe />
       </mesh>
+
+      {/* ── Midfield Center Circle and Line ── */}
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[23, 0.15]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[4.5, 4.65, 32]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[0.3, 16]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.9} transparent />
+      </mesh>
+
+      {/* ── Penalty Areas ── */}
+      {/* North Penalty Box */}
+      <mesh position={[0, 0.03, 13]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[12, 0.15]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[-6, 0.03, 16]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.15, 6]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[6, 0.03, 16]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.15, 6]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+
+      {/* South Penalty Box */}
+      <mesh position={[0, 0.03, -13]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[12, 0.15]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[-6, 0.03, -16]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.15, 6]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+      <mesh position={[6, 0.03, -16]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[0.15, 6]} />
+        <meshBasicMaterial color="#ffffff" opacity={0.7} transparent />
+      </mesh>
+
+      {/* ── 3D Goalposts ── */}
+      {/* North Goalpost */}
+      <group position={[0, 0, 19]}>
+         <mesh position={[-2.5, 1.3, 0]} castShadow><cylinderGeometry args={[0.08, 0.08, 2.6]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+         <mesh position={[2.5, 1.3, 0]} castShadow><cylinderGeometry args={[0.08, 0.08, 2.6]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+         <mesh position={[0, 2.6, 0]} rotation={[0, 0, Math.PI / 2]} castShadow><cylinderGeometry args={[0.08, 0.08, 5.0]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+      </group>
+      {/* South Goalpost */}
+      <group position={[0, 0, -19]}>
+         <mesh position={[-2.5, 1.3, 0]} castShadow><cylinderGeometry args={[0.08, 0.08, 2.6]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+         <mesh position={[2.5, 1.3, 0]} castShadow><cylinderGeometry args={[0.08, 0.08, 2.6]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+         <mesh position={[0, 2.6, 0]} rotation={[0, 0, Math.PI / 2]} castShadow><cylinderGeometry args={[0.08, 0.08, 5.0]} /><meshStandardMaterial color="#ffffff" roughness={0.2} /></mesh>
+      </group>
       
       {/* Live Direct A* Mapping Engine */}
       {computedPoints.length > 0 && (
@@ -381,17 +464,45 @@ function StadiumArchitecture({ isDark, isRoofOpen }: { isDark: boolean; isRoofOp
 
   return (
     <group scale={[1.4, 1, 1.1]}>
+       {/* ── Seating Bowl Main Shell ── */}
        <mesh position={[0, 10, 0]} receiveShadow>
           <cylinderGeometry args={[55, 25, 20, 64, 1, true]} />
-          <meshStandardMaterial color={isDark ? "#0f172a" : "#cbd5e1"} side={THREE.DoubleSide} roughness={0.8} />
+          <meshStandardMaterial color={isDark ? "#1e293b" : "#cbd5e1"} side={THREE.DoubleSide} roughness={0.9} />
        </mesh>
+       
+       {/* ── Concrete Walkway Rings / Concourse walkway dividers ── */}
+       <mesh position={[0, 7.5, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[35.5, 36.8, 64]} />
+          <meshStandardMaterial color="#334155" roughness={0.8} />
+       </mesh>
+       <mesh position={[0, 14, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[45.5, 46.8, 64]} />
+          <meshStandardMaterial color="#334155" roughness={0.8} />
+       </mesh>
+
+       {/* ── Outer Facade Cylindrical Shell ── */}
        <mesh position={[0, 10, 0]}>
           <cylinderGeometry args={[56, 56, 22, 64, 1, true]} />
-          <meshStandardMaterial color="#94a3b8" metalness={0.8} roughness={0.2} side={THREE.DoubleSide} />
+          <meshStandardMaterial color="#64748b" metalness={0.7} roughness={0.4} side={THREE.DoubleSide} />
        </mesh>
+
+       {/* ── 16 External Architectural Support Columns ── */}
+       {Array.from({ length: 16 }).map((_, idx) => {
+          const angle = (idx / 16) * Math.PI * 2;
+          const px = Math.cos(angle) * 56.2;
+          const pz = Math.sin(angle) * 56.2;
+          return (
+             <mesh key={idx} position={[px, 10, pz]} castShadow>
+                <boxGeometry args={[1, 20, 1.6]} />
+                <meshStandardMaterial color="#475569" metalness={0.8} roughness={0.3} />
+             </mesh>
+          );
+       })}
+
+       {/* ── Grand Stadium Roof ── */}
        <mesh ref={roofRef} position={[0, 21, 0]} rotation={[-Math.PI/2, 0, 0]}>
           <circleGeometry args={[56, 64]} />
-          <meshStandardMaterial color="#475569" metalness={0.6} roughness={0.4} />
+          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.2} />
        </mesh>
     </group>
   );
@@ -443,9 +554,92 @@ function CameraController({ isFpv, seat, mappedPath, isFollowingPath }: { isFpv:
             camera.position.lerp(new THREE.Vector3(0, 45, -60), 0.05);
         }
         controls.minDistance = 20;
-     }
-  });
-  return null;
+      }
+   });
+   return null;
+}
+
+function Floodlight({ position }: { position: [number, number, number] }) {
+  const angle = Math.atan2(-position[0], -position[2]);
+  return (
+    <group position={position}>
+       {/* Support Pole */}
+       <mesh castShadow>
+          <cylinderGeometry args={[0.2, 0.45, 22, 8]} />
+          <meshStandardMaterial color="#475569" metalness={0.7} roughness={0.3} />
+       </mesh>
+       {/* Floodlight Head Frame */}
+       <group position={[0, 11, 0]} rotation={[0.3, angle, 0]}>
+          <mesh castShadow>
+             <boxGeometry args={[3.2, 1.8, 0.5]} />
+             <meshStandardMaterial color="#1e293b" roughness={0.5} />
+          </mesh>
+          {/* Glowing Halogen Bulbs */}
+          {[-1.0, -0.35, 0.35, 1.0].map((off, idx) => (
+             <mesh key={idx} position={[off, 0, 0.26]}>
+                <sphereGeometry args={[0.25, 16, 16]} />
+                <meshBasicMaterial color="#fffbeb" />
+             </mesh>
+          ))}
+          {/* SpotLight directing down onto the pitch */}
+          <spotLight 
+             color="#ffffff" 
+             intensity={28} 
+             distance={80} 
+             angle={0.6} 
+             penumbra={0.6} 
+             castShadow
+             position={[0, 0, 0.4]}
+          />
+       </group>
+    </group>
+  );
+}
+
+function Scoreboard({ position, rotation }: { position: [number, number, number], rotation: [number, number, number] }) {
+  return (
+    <group position={position} rotation={rotation}>
+       {/* Structure board */}
+       <mesh castShadow>
+          <boxGeometry args={[14, 6.5, 0.8]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.6} metalness={0.7} />
+       </mesh>
+       {/* Display screen glow */}
+       <mesh position={[0, 0, 0.41]}>
+          <planeGeometry args={[13.2, 5.7]} />
+          <meshBasicMaterial color="#020617" />
+       </mesh>
+       {/* HTML embedded scoreboard metrics */}
+       <Html position={[0, 0, 0.45]} transform occlude center distanceFactor={14}>
+          <div className="w-[500px] h-[220px] bg-slate-950 text-white font-mono p-5 flex flex-col justify-between border-4 border-slate-800 rounded-3xl select-none">
+             <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+                <span className="text-md font-black text-[#FEBE10] tracking-widest">SWARMAI BERNABEU</span>
+                <span className="px-2.5 py-0.5 bg-emerald-500/20 text-emerald-400 text-[9px] rounded-full font-bold border border-emerald-500/40 animate-pulse">SYSTEM ACTIVE</span>
+             </div>
+             <div className="flex justify-around items-center my-2">
+                <div className="text-center">
+                   <p className="text-gray-500 text-[9px] uppercase tracking-wider font-bold">Total Crowd</p>
+                   <p className="text-3xl font-black text-white mt-0.5">81,354</p>
+                </div>
+                <div className="w-[1px] h-10 bg-slate-800" />
+                <div className="text-center">
+                   <p className="text-gray-500 text-[9px] uppercase tracking-wider font-bold">Wait Saved</p>
+                   <p className="text-3xl font-black text-emerald-400 mt-0.5">42%</p>
+                </div>
+                <div className="w-[1px] h-10 bg-slate-800" />
+                <div className="text-center">
+                   <p className="text-gray-500 text-[9px] uppercase tracking-wider font-bold">P2P Nodes</p>
+                   <p className="text-3xl font-black text-white mt-0.5">99.8%</p>
+                </div>
+             </div>
+             <div className="flex justify-between text-[9px] text-gray-600 font-bold border-t border-slate-800 pt-2">
+                <span>ESTADIO SANTIAGO BERNABEU</span>
+                <span>SAFETY STATE: OPTIMAL 🟢</span>
+             </div>
+          </div>
+       </Html>
+    </group>
+  );
 }
 
 // --- MAIN APP (UI OVERLAY) --- //
@@ -480,6 +674,11 @@ export default function App() {
         .catch(() => {}); // Backend offline — silently skip
   }, [appState]);
 
+  // Chatbot State
+  const [chatMessages, setChatMessages] = useState([
+    { text: "Welcome to SwarmAI Bernabeu Edition! Click any seat block in the 3D stadium to claim it, or ask me for optimal routing directions.", isUser: false }
+  ]);
+
   // Attempt to claim seat on click (gracefully skip if backend offline)
   useEffect(() => {
      if (selectedSeat && username) {
@@ -490,17 +689,16 @@ export default function App() {
             body: JSON.stringify({ user_id: username, seat_id: seatId })
         }).then(res => {
             if (res.status === 409) {
-                alert("Seat is already reserved by someone else! Pick another.");
+                setChatMessages(prev => [
+                    ...prev,
+                    { text: `⚠️ Seat ${seatId} is already reserved by another attendee. Please select another seat block on the 3D map.`, isUser: false }
+                ]);
+                setIsChatOpen(true);
                 setSelectedSeat(null);
             }
         }).catch(() => {}); // Backend offline — seat claimed locally
      }
   }, [selectedSeat, username]);
-
-  // Chatbot State
-  const [chatMessages, setChatMessages] = useState([
-    { text: "Welcome to SwarmAI Bernabéu Edition! Click any seat block in the 3D stadium to claim it, or ask me for optimal routing directions.", isUser: false }
-  ]);
   const [inputValue, setInputValue] = useState("");
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
@@ -517,7 +715,7 @@ export default function App() {
      }
   
      let reply = "Processing Swarm vectors...";
-     if (target_type === 'restroom') reply = "Virtual Buffer Zone deployed. Wait times assessed. I've highlighted the nearest free restroom on your 3D structural map. You are cleared to proceed.";
+     if (target_type === 'restroom') reply = "Traffic mapped to nearest Merchandise Store. I've highlighted it in green on your 3D structural map.";
      else if (target_type === 'concession') reply = "Concessions traffic monitored. I've plotted the shortest vector to the nearest available food stall on your 3D structural map.";
      else reply = "Gate traffic analyzed. To avoid peak rush, I have calculated and mapped the fastest exit trajectory for your current location on the pitch.";
 
@@ -566,7 +764,16 @@ export default function App() {
     const lower = newMsg.toLowerCase();
     let target_type = "";
     
-    if (lower.includes('bathroom') || lower.includes('restroom') || lower.includes('washroom')) target_type = "restroom";
+    if (lower.includes('bathroom') || lower.includes('restroom') || lower.includes('washroom') || lower.includes('hotel') || lower.includes('toilet')) {
+        setChatMessages(prev => [
+            ...prev,
+            { text: newMsg, isUser: true },
+            { text: "There are no public washrooms or hotels inside the stadium area. You can find Merchandise Stores at the North and East concourses.", isUser: false }
+        ]);
+        return;
+    }
+    
+    if (lower.includes('merchandise') || lower.includes('merch') || lower.includes('store') || lower.includes('shop') || lower.includes('buy')) target_type = "restroom";
     else if (lower.includes('food') || lower.includes('snack') || lower.includes('hungry') || lower.includes('concession')) target_type = "concession";
     else if (lower.includes('gate') || lower.includes('exit') || lower.includes('leave') || lower.includes('evacuate') || lower.includes('emergency')) {
        if (lower.includes('evacuate') || lower.includes('emergency')) setIsEmergency(true);
@@ -593,7 +800,7 @@ export default function App() {
             else if (data.suggested_action === 'route_food') requestPath('concession');
             else if (data.suggested_action === 'route_exit') requestPath('gate');
         } catch {
-            setChatMessages(prev => [...prev, { text: "🧠 SwarmAI Bernabéu Edition is processing... Try asking about restrooms, food, or exits for instant routing!", isUser: false }]);
+            setChatMessages(prev => [...prev, { text: "🧠 SwarmAI Bernabeu Edition is processing... Try asking about restrooms, food, or exits for instant routing!", isUser: false }]);
         }
         return;
     }
@@ -657,17 +864,38 @@ export default function App() {
         >
           <color attach="background" args={[isDark ? '#020617' : '#f8fafc']} />
           <fogExp2 attach="fog" args={[isDark ? '#020617' : '#f8fafc', 0.008]} />
-          <Environment preset={isDark ? "night" : "city"} />
-          <ambientLight intensity={isDark ? 0.2 : 0.7} />
+          <ambientLight intensity={isDark ? 0.4 : 0.8} />
+          <directionalLight
+             position={[20, 50, -20]}
+             intensity={isDark ? 0.3 : 1.2}
+             castShadow
+             shadow-mapSize-width={1024}
+             shadow-mapSize-height={1024}
+          />
+          <hemisphereLight
+             intensity={isDark ? 0.2 : 0.4}
+             color={isDark ? "#1e293b" : "#e2e8f0"}
+             groundColor={isDark ? "#0f172a" : "#cbd5e1"}
+          />
           
           <Suspense fallback={null}>
             <StadiumArchitecture isDark={isDark} isRoofOpen={isRoofOpen} />
             <Pitch isRetracted={isPitchRetracted} seat={selectedSeat} mappedPath={mappedPath} isFollowingPath={isFollowingPath} onCompletePath={() => setIsFollowingPath(false)} />
-            <Swarm count={3000} isDark={isDark} isEmergency={isEmergency} />
+            <Swarm count={500} isDark={isDark} isEmergency={isEmergency} />
+
+            {/* ── Realistic Scoreboards ── */}
+            <Scoreboard position={[0, 24, 52.5]} rotation={[0, Math.PI, 0]} />
+            <Scoreboard position={[0, 24, -52.5]} rotation={[0, 0, 0]} />
+
+            {/* ── Realistic Floodlight Towers ── */}
+            <Floodlight position={[42, 11, 42]} />
+            <Floodlight position={[-42, 11, 42]} />
+            <Floodlight position={[42, 11, -42]} />
+            <Floodlight position={[-42, 11, -42]} />
             
             {/* Interactive Physical Structures placed firmly on the peripheral Radius limits ~r=50/55 */}
-            <PhysicalPOI position={[-38, 20, 38]} label="🚻 Restrooms (North)" color="#3b82f6" waitTime={waits.rn > 0 ? `${waits.rn} MIN WAIT` : "FREE 🟢"} isHotspot={waits.rn > 10} />
-            <PhysicalPOI position={[38, 20, -38]} label="🚻 Restrooms (East)" color="#10b981" waitTime={waits.re > 0 ? `${waits.re} MIN WAIT` : "FREE 🟢"} isHotspot={waits.re > 10} />
+            <PhysicalPOI position={[-38, 20, 38]} label="🛍️ Merch Store (North)" color="#a855f7" waitTime={waits.rn > 0 ? `${waits.rn} MIN WAIT` : "FREE 🟢"} isHotspot={waits.rn > 10} />
+            <PhysicalPOI position={[38, 20, -38]} label="🛍️ Merch Store (East)" color="#a855f7" waitTime={waits.re > 0 ? `${waits.re} MIN WAIT` : "FREE 🟢"} isHotspot={waits.re > 10} />
             <PhysicalPOI position={[48, 20, 0]} label="🍔 Concessions 1" color="#f59e0b" waitTime={waits.c1 > 0 ? `${waits.c1} MIN WAIT` : "FREE 🟢"} isHotspot={waits.c1 > 10} />
             <PhysicalPOI position={[-48, 20, 0]} label="🍔 Concessions 2" color="#10b981" waitTime={waits.c2 > 0 ? `${waits.c2} MIN WAIT` : "FREE 🟢"} isHotspot={waits.c2 > 10} />
             
@@ -759,7 +987,7 @@ export default function App() {
       {/* MAIN UI DASHBOARD */}
       <div className={`relative z-10 w-full h-full pointer-events-none transition-opacity duration-1000 flex flex-col ${appState === 'main' ? 'opacity-100' : 'opacity-0'}`}>
          
-         <header className={`px-6 py-4 flex justify-between items-center pointer-events-auto backdrop-blur-xl border-b ${isDark ? 'bg-black/50 border-white/10' : 'bg-white/80 border-slate-200'}`}>
+         <header className={`px-6 py-4 flex flex-col lg:flex-row gap-4 justify-between items-center pointer-events-auto backdrop-blur-xl border-b ${isDark ? 'bg-black/50 border-white/10' : 'bg-white/80 border-slate-200'}`}>
              <div className="flex items-center gap-3">
                  <Shield className="text-[#FEBE10]" size={28} />
                  <div>
@@ -769,10 +997,22 @@ export default function App() {
                      </span>
                  </div>
              </div>
+
+             {/* SwarmAI Running Status & Quick Navigation */}
+             <div className="flex flex-wrap items-center gap-2">
+                 <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
+                     <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                     ✅ SwarmAI is running!
+                 </span>
+                 <Link href="/" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                     📱 Attendee App
+                 </Link>
+                 <Link href="/dashboard" className="px-3 py-1.5 bg-[#FEBE10] text-black hover:bg-white border border-[#FEBE10]/20 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                     📊 Dashboard
+                 </Link>
+             </div>
+
              <div className="flex gap-2" role="toolbar" aria-label="Stadium controls">
-                <a href="/dashboard" aria-label="Open operator dashboard" className={`px-4 py-2 border rounded-xl font-bold flex items-center gap-2 text-[10px] uppercase tracking-widest transition-all hover:bg-[#FEBE10] hover:text-black focus-visible:ring-2 focus-visible:ring-yellow-400 ${isDark ? 'bg-[#FEBE10]/10 border-[#FEBE10]/30 text-[#FEBE10]' : 'bg-blue-50 border-blue-200 text-blue-600'}`}>
-                  <span aria-hidden="true">📊</span> OPERATOR DASHBOARD
-                </a>
                 <button
                   onClick={() => setIsEmergency(!isEmergency)}
                   aria-label={isEmergency ? 'Cancel emergency reroute' : 'Trigger emergency evacuation reroute'}
@@ -843,28 +1083,28 @@ export default function App() {
                 </div>
 
                 {/* Wait Predictors */}
-                <div className={`pointer-events-auto p-4 rounded-3xl backdrop-blur-3xl border shadow-xl flex flex-col gap-3 ${isDark ? 'bg-black/60 border-white/10' : 'bg-white/80 border-slate-200'}`}>
-                   <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-400 mb-1">
-                      <Clock size={12} /> Real-Time Predictors
-                   </h3>
-                   
-                   <div className="space-y-3" aria-live="polite" aria-label="Real-time wait time predictions">
-                      <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                          <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">East Concession</span>
-                          <div className="text-right">
-                             <div className="text-emerald-400 font-mono text-xs font-black">2 MIN</div>
-                             <div className="text-[8px] text-gray-500 uppercase">-4m Swarm Savings</div>
-                          </div>
-                      </div>
-                      <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                          <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">North Restroom</span>
-                          <div className="text-right">
-                             <div className="text-red-400 font-mono text-xs font-black">18 SEC</div>
-                             <div className="text-[8px] text-emerald-500 font-bold uppercase">Queue dropping 87%</div>
-                          </div>
-                      </div>
-                   </div>
-                </div>
+                 <div className={`pointer-events-auto p-4 rounded-3xl backdrop-blur-3xl border shadow-xl flex flex-col gap-3 ${isDark ? 'bg-black/60 border-white/10' : 'bg-white/80 border-slate-200'}`}>
+                    <h3 className="text-[10px] font-black uppercase tracking-widest flex items-center gap-2 text-blue-400 mb-1">
+                       <Clock size={12} /> Real-Time Predictors
+                    </h3>
+                    
+                    <div className="space-y-3" aria-live="polite" aria-label="Real-time wait time predictions">
+                       <div className="flex justify-between items-end border-b border-white/5 pb-2">
+                           <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">East Concession</span>
+                           <div className="text-right">
+                              <div className="text-emerald-400 font-mono text-xs font-black">2 MIN</div>
+                              <div className="text-[8px] text-gray-500 uppercase">-4m Swarm Savings</div>
+                           </div>
+                       </div>
+                       <div className="flex justify-between items-end border-b border-white/5 pb-2">
+                           <span className="text-[9px] font-bold text-gray-300 uppercase tracking-widest">North Merch Store</span>
+                           <div className="text-right">
+                              <div className="text-red-400 font-mono text-xs font-black">18 SEC</div>
+                              <div className="text-[8px] text-emerald-500 font-bold uppercase">Stock level: 98%</div>
+                           </div>
+                       </div>
+                    </div>
+                 </div>
 
              </div>
 
@@ -904,8 +1144,8 @@ export default function App() {
 
                   {/* QUICK ROUTES */}
                   <div className="flex items-center gap-2" role="group" aria-label="Quick route options">
-                     <button aria-label="Route me to nearest restrooms" onClick={() => requestPath('restroom')} className="flex items-center gap-2 hover:bg-blue-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-blue-100 text-blue-900 border-blue-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-400">
-                         <Waves size={12} aria-hidden="true"/> Restrooms
+                     <button aria-label="Route me to nearest merchandise store" onClick={() => requestPath('restroom')} className="flex items-center gap-2 hover:bg-purple-600 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-purple-100 text-purple-900 border-purple-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-purple-400">
+                         <Coins size={12} aria-hidden="true"/> Merchandise
                      </button>
                      <button aria-label="Route me to nearest food concessions" onClick={() => requestPath('concession')} className="flex items-center gap-2 hover:bg-amber-500 hover:text-white transition-colors px-3 py-2 rounded-full text-[9px] font-black tracking-widest uppercase border whitespace-nowrap bg-amber-100 text-amber-900 border-amber-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-amber-400">
                          <Coffee size={12} aria-hidden="true"/> Food
@@ -982,7 +1222,7 @@ export default function App() {
                      </div>
 
                      <div className="px-4 pb-2 pt-2 flex gap-2 overflow-x-auto whitespace-nowrap border-t border-white/5 pointer-events-auto" role="group" aria-label="Quick route shortcuts">
-                        <button aria-label="Find nearest restrooms" onClick={() => requestPath('restroom')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🚻</span> Nearby Restrooms</button>
+                        <button aria-label="Find nearest merchandise store" onClick={() => requestPath('restroom')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🛍️</span> Nearby Merchandise</button>
                         <button aria-label="Find nearest food concessions" onClick={() => requestPath('concession')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🍔</span> Nearby Food</button>
                         <button aria-label="Find nearest exit gates" onClick={() => requestPath('gate')} className={`bg-transparent hover:bg-[#FEBE10] hover:text-black transition-colors rounded-full px-3 py-1 text-[9px] uppercase border ${isDark ? 'border-white/20' : 'border-slate-300'} font-black tracking-widest focus-visible:ring-2 focus-visible:ring-yellow-400`}><span aria-hidden="true">🚪</span> Nearby Gates</button>
                      </div>

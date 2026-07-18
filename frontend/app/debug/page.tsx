@@ -8,9 +8,12 @@
  */
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useSwarmStore } from '@/lib/store';
 import { connectWebSocket, subscribeDebug, fetchNegotiations } from '@/lib/websocket';
 import { Terminal, Radio, Pause, Play, Trash2, Download } from 'lucide-react';
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function DebugPage() {
   const { connected, negotiations, metrics, agents } = useSwarmStore();
@@ -61,7 +64,7 @@ export default function DebugPage() {
   return (
     <div className="min-h-screen bg-surface-0 bg-mesh">
       {/* Header */}
-      <header className="glass sticky top-0 z-50 px-6 py-4 flex items-center justify-between">
+      <header className="glass sticky top-0 z-50 px-6 py-4 flex flex-col lg:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-4">
           <Terminal size={24} className="text-neon-green" />
           <div>
@@ -73,6 +76,20 @@ export default function DebugPage() {
               {localLog.length} logged negotiations
             </p>
           </div>
+        </div>
+
+        {/* SwarmAI Running Status & Quick Navigation */}
+        <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                ✅ SwarmAI is running!
+            </span>
+            <Link href="/" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                📱 Attendee App
+            </Link>
+            <Link href="/dashboard" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                📊 Dashboard
+            </Link>
         </div>
 
         <div className="flex items-center gap-2">

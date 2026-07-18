@@ -44,8 +44,8 @@ CONCESSIONS = [
 
 # ── Restrooms (Explicit 1-to-1 sync with UI models) ───────────────────────────
 RESTROOMS = [
-    {"id": "restroom_n", "name": "Restrooms (North)", "zone_type": "restroom", "x": 15.45, "y": 84.54, "width": 3, "height": 3, "capacity": 30},
-    {"id": "restroom_e", "name": "Restrooms (East)", "zone_type": "restroom", "x": 84.54, "y": 15.45, "width": 3, "height": 3, "capacity": 30},
+    {"id": "restroom_n", "name": "Merchandise (North)", "zone_type": "restroom", "x": 15.45, "y": 84.54, "width": 3, "height": 3, "capacity": 30},
+    {"id": "restroom_e", "name": "Merchandise (East)", "zone_type": "restroom", "x": 84.54, "y": 15.45, "width": 3, "height": 3, "capacity": 30},
 ]
 
 # ── Seating Sections (16 sections in 4 tiers) ────────────────────────────────

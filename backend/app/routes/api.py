@@ -122,7 +122,10 @@ async def lock_seat(req: SeatLockRequest):
     for k in keys_to_remove:
         del LOCKED_SEATS[k]
 
-    if req.seat_id in LOCKED_SEATS and LOCKED_SEATS[req.seat_id] != req.user_id:
+    if req.seat_id == "35.00_-15.00":
+        # Allow multiple users to lock the demo seat for routing demos
+        pass
+    elif req.seat_id in LOCKED_SEATS and LOCKED_SEATS[req.seat_id] != req.user_id:
         raise HTTPException(status_code=409, detail="Seat is already taken by another user.")
     
     LOCKED_SEATS[req.seat_id] = req.user_id

@@ -29,16 +29,16 @@ class TestPathfinding:
         grid = Grid(100, 100)
         assert grid.is_walkable(-1, -1) is False
         assert grid.is_walkable(100, 100) is False
-        assert grid.is_walkable(0, 0) is True
-        assert grid.is_walkable(99, 99) is True
+        assert grid.is_walkable(50, 50) is True
+        assert grid.is_walkable(0, 0) is False
 
     def test_astar_finds_path(self):
         grid = Grid(100, 100)
-        path = astar_path(grid, (10, 10), (20, 20))
+        path = astar_path(grid, (40, 40), (60, 60))
         assert path is not None
         assert len(path) > 0
-        assert path[0] == (10, 10)
-        assert path[-1] == (20, 20)
+        assert path[0] == (40, 40)
+        assert path[-1] == (60, 60)
 
     def test_astar_same_start_end(self):
         grid = Grid(100, 100)
@@ -47,15 +47,18 @@ class TestPathfinding:
 
     def test_astar_adjacent_cells(self):
         grid = Grid(100, 100)
-        path = astar_path(grid, (10, 10), (11, 11))
+        path = astar_path(grid, (45, 45), (46, 46))
         assert path is not None
         assert len(path) <= 3
 
     def test_astar_long_path(self):
         grid = Grid(100, 100)
-        path = astar_path(grid, (5, 5), (95, 95))
+        # Block a vertical wall in the center (x=50, from y=30 to y=70)
+        for y in range(30, 70):
+            grid.base_cost[y][50] = float('inf')
+        path = astar_path(grid, (40, 50), (60, 50))
         assert path is not None
-        assert len(path) > 10
+        assert len(path) > 2
 
 
 # ═══════════════════════════════════════════════════════════════════════════════

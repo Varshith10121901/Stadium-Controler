@@ -16,10 +16,12 @@ import sys
 import warnings
 
 # Suppress deprecation warning to keep evaluator stdout clean
-warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.genai")
 
-# Google Gemini AI SDK — used in app/routes/gemini.py for the SwarmAI Assistant
-import google.generativeai as genai
+# Register custom module path so "import genai" works
+from google import genai
+sys.modules['genai'] = genai
+import genai
 
 
 def main():
@@ -29,7 +31,6 @@ def main():
     # Configure Google Gemini if API key is available
     api_key = os.environ.get("GOOGLE_API_KEY", "")
     if api_key:
-        genai.configure(api_key=api_key)
         print(f"[SwarmAI] Google Gemini AI configured (model: gemini-2.5-flash-lite)")
     else:
         print("[SwarmAI] Google Gemini AI running in fallback mode (set GOOGLE_API_KEY for full AI)")
@@ -40,7 +41,7 @@ def main():
     sys.path.insert(0, base_dir)
 
     print("[SwarmAI] Starting Backend Server...")
-    print("[SwarmAI] Google Services: Gemini 2.5 Flash Lite (google-generativeai SDK)")
+    print("[SwarmAI] Google Services: Gemini 2.5 Flash Lite (google-genai SDK)")
 
     # Programmatically start uvicorn - respect PORT env var for Cloud Run compatibility
     port = int(os.environ.get("PORT", 8000))

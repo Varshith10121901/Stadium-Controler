@@ -101,6 +101,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# ── Request Logging Middleware ────────────────────────────────────────────────
+import logging
+logging.basicConfig(filename='D:/Hackathons/PROMPTWARS 2/swarmai/backend.log', level=logging.INFO, format='%(asctime)s %(message)s')
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logging.info(f"REQUEST: {request.method} {request.url.path} {request.url.query}")
+    response = await call_next(request)
+    logging.info(f"RESPONSE: {response.status_code} for {request.url.path}")
+    return response
+
 # ── Register Routes ──────────────────────────────────────────────────────────
 app.include_router(api.router)
 app.include_router(websocket.router)

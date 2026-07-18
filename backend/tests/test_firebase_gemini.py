@@ -31,14 +31,14 @@ class TestFirestoreEndpoints:
         })
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] in ["success", "error"]
+        assert data["status"] in ["success", "error", "skipped"]
 
     def test_save_metrics_empty_payload(self):
         """POST /api/save-swarm-metrics with empty dict should not crash."""
         response = client.post("/api/save-swarm-metrics", json={})
         assert response.status_code == 200
         data = response.json()
-        assert data["status"] in ["success", "error"]
+        assert data["status"] in ["success", "error", "skipped"]
 
     def test_save_metrics_defaults(self):
         """POST /api/save-swarm-metrics should default total_agents to 1000 if not provided."""

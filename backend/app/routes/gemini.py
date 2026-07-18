@@ -16,10 +16,17 @@ Endpoints:
 """
 
 import os
+import sys
 import json
 import warnings
-warnings.filterwarnings("ignore", category=FutureWarning, module="google.generativeai")
-import google.generativeai as genai
+warnings.filterwarnings("ignore", category=FutureWarning, module="google.genai")
+
+# Register custom module path so "import genai" works
+from google import genai
+from google.genai import types
+sys.modules['genai'] = genai
+import genai
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -28,19 +35,34 @@ router = APIRouter(prefix="/api", tags=["gemini"])
 # ── Gemini Configuration ─────────────────────────────────────────────────────
 GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "")
 
-if GOOGLE_API_KEY:
-    genai.configure(api_key=GOOGLE_API_KEY)
+# ── Shared Model Instance (using new SDK Client) ─────────────────────────────
+class GenerativeModelShim:
+    def __init__(self, model_name: str, system_instruction: str = None):
+        self.model_name = model_name
+        self.system_instruction = system_instruction
+        self.client = genai.Client(api_key=GOOGLE_API_KEY)
 
-# ── Shared Model Instance ────────────────────────────────────────────────────
+    def generate_content(self, contents: str):
+        config = None
+        if self.system_instruction:
+            config = types.GenerateContentConfig(
+                system_instruction=self.system_instruction
+            )
+        return self.client.models.generate_content(
+            model=self.model_name,
+            contents=contents,
+            config=config
+        )
+
 def _get_model(system_instruction: str = None):
     """Create a Gemini model instance with optional system instruction."""
-    return genai.GenerativeModel(
+    return GenerativeModelShim(
         model_name="gemini-2.5-flash-lite",
         system_instruction=system_instruction
     )
 
 # ── System Prompts ────────────────────────────────────────────────────────────
-CHAT_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition — an expert AI crowd management system for Estadio Santiago Bernabéu (80,000+ capacity).
+CHAT_SYSTEM_PROMPT = """You are SwarmAI Bernabeu Edition — an expert AI crowd management system for Estadio Santiago Bernabeu (80,000+ capacity).
 Powered by Google Gemini 2.5 Flash Lite, deployed on Google Cloud Run, with real-time metrics synced to Google Firebase Firestore.
 
 You have deep knowledge of Fruin's Crowd Science:
@@ -52,7 +74,7 @@ You have deep knowledge of Fruin's Crowd Science:
 Key stadium topology:
 - 4 Gates: A/North, B/East, C/South, D/West
 - 2 Concession stands: East and West wings
-- 2 Restroom blocks: North and East sectors
+- 2 Merchandise Stores: North and East sectors
 - 32 seating sections, ~2500 seats each
 - Real-time crowd simulation with 100-3000 virtual agents on a 100×100 grid
 
@@ -70,7 +92,7 @@ Respond concisely (2-3 sentences max for chat). Be helpful, friendly, and stadiu
 If asked about non-stadium topics, briefly answer but redirect to stadium navigation.
 """
 
-SUGGEST_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition Route Optimizer — a backend intelligence engine for Estadio Santiago Bernabéu (80,000+ capacity).
+SUGGEST_SYSTEM_PROMPT = """You are SwarmAI Bernabeu Edition Route Optimizer — a backend intelligence engine for Estadio Santiago Bernabeu (80,000+ capacity).
 Powered by Google Gemini AI running on Google Cloud Run infrastructure with Firebase Firestore real-time sync.
 
 You have deep knowledge of Fruin's Crowd Science:
@@ -98,7 +120,7 @@ Always respond in this exact JSON format:
 }
 """
 
-DENSITY_SYSTEM_PROMPT = """You are SwarmAI Bernabéu Edition Density Analyzer — an expert AI that interprets crowd density data for Estadio Santiago Bernabéu operators.
+DENSITY_SYSTEM_PROMPT = """You are SwarmAI Bernabeu Edition Density Analyzer — an expert AI that interprets crowd density data for Estadio Santiago Bernabeu operators.
 Powered by Google Gemini AI with live telemetry synced from Google Firebase Firestore every 10 simulation ticks.
 
 You have deep knowledge of Fruin's Crowd Science and Level-of-Service (LoS) grading:
@@ -307,7 +329,7 @@ Analyze this data and provide actionable recommendations.
 def _detect_action(text: str) -> str | None:
     """Parse Gemini response to detect routing actions."""
     lower = text.lower()
-    if any(w in lower for w in ["restroom", "bathroom", "washroom"]):
+    if any(w in lower for w in ["merchandise", "store", "shop"]):
         return "route_restroom"
     elif any(w in lower for w in ["food", "concession", "snack", "eat"]):
         return "route_food"
@@ -321,9 +343,14 @@ def _fallback_response(message: str) -> ChatResponse:
     """Smart fallback when Gemini API is unavailable."""
     lower = message.lower()
 
-    if any(w in lower for w in ["restroom", "bathroom", "washroom", "toilet"]):
+    if any(w in lower for w in ["restroom", "bathroom", "washroom", "toilet", "hotel"]):
         return ChatResponse(
-            reply="I've identified 2 restroom blocks in your stadium sector. The North Restroom currently has a 2-min wait (87% shorter than South). Routing you there now.",
+            reply="There are no public washrooms or hotels inside the stadium area. Routing you to the nearest Merchandise Store instead.",
+            suggested_action="route_restroom"
+        )
+    elif any(w in lower for w in ["merchandise", "store", "shop", "buy"]):
+        return ChatResponse(
+            reply="The North Merchandise Store has the shortest queue right now (~2 min). Following the swarm-optimized route earns you 50 Swarm Points.",
             suggested_action="route_restroom"
         )
     elif any(w in lower for w in ["food", "eat", "hungry", "snack", "concession", "drink"]):
@@ -338,16 +365,16 @@ def _fallback_response(message: str) -> ChatResponse:
         )
     elif any(w in lower for w in ["wait", "queue", "how long", "time"]):
         return ChatResponse(
-            reply="Current wait estimates -- Restrooms: 2min (North) / 18min (South) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing.",
+            reply="Current wait estimates -- Merch Stores: 2min (North) / 18s (East) | Food: 3min (East) / 12min (West). SwarmAI saves you ~40% wait time through predictive routing.",
             suggested_action=None
         )
     elif any(w in lower for w in ["hello", "hi", "hey", "help"]):
         return ChatResponse(
-            reply="Hey there! I'm your SwarmAI Assistant, powered by Google Gemini. I can route you to restrooms, food, or exits using real-time crowd intelligence. What do you need?",
+            reply="Hey there! I'm your SwarmAI Assistant, powered by Google Gemini. I can route you to merchandise stores, food, or exits using real-time crowd intelligence. What do you need?",
             suggested_action=None
         )
     else:
         return ChatResponse(
-            reply="I'm SwarmAI, your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where is the nearest restroom?' or 'How long is the food queue?'",
+            reply="I'm SwarmAI, your AI stadium navigator powered by Google Gemini. I track live crowd density across all zones to find you the fastest routes. Try asking: 'Where is the nearest merchandise store?' or 'How long is the food queue?'",
             suggested_action=None
         )

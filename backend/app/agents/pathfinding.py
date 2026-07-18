@@ -31,14 +31,57 @@ class Grid:
         """
         Mark cells outside the stadium oval as blocked.
         Stadium is an ellipse centered at (50,50) with rx=48, ry=38.
+        Also marks seats and the pitch as high-cost cells (50.0), leaving
+        concourses and aisles as low-cost walkable paths (1.0).
         """
         cx, cy = 50.0, 50.0
         rx, ry = 48.0, 38.0
+        
+        # Seating sectors details to match frontend
+        SECTS = 16
+        sector_angle = (2 * math.pi) / SECTS
+        aisle_gap = 0.08  # radial stairway gap in radians
+
         for y in range(self.height):
             for x in range(self.width):
                 # Check if point is inside the stadium ellipse
                 if ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1.0:
                     self.base_cost[y][x] = float('inf')
+                    continue
+
+                # Convert to physical 3D world coordinates
+                world_x = (x - 50.0) * 1.1
+                world_z = (y - 50.0) * 1.1
+                radius = math.hypot(world_x, world_z)
+
+                # 1. Pitch Area (radius < 26.0) is restricted (high cost)
+                if radius < 26.0:
+                    self.base_cost[y][x] = 50.0
+                    continue
+
+                # 2. Grandstands Area (radius 26.0 to 54.0) contains seats & aisles
+                if 26.0 <= radius <= 54.0:
+                    # Calculate angle in [0, 2*pi]
+                    angle = math.atan2(world_z, world_x)
+                    if angle < 0:
+                        angle += 2 * math.pi
+
+                    # Align sector aisle gap at shifted_angle = 0
+                    shifted_angle = (angle + aisle_gap / 2) % sector_angle
+                    if shifted_angle < aisle_gap:
+                        self.base_cost[y][x] = 1.0   # Aisle / Stairway
+                    else:
+                        self.base_cost[y][x] = 50.0  # Seats (restricted / high cost)
+                    continue
+
+                # 3. Outer Concourse / Walkways (radius > 54.0)
+                self.base_cost[y][x] = 1.0
+
+    def is_walkable(self, x: int, y: int) -> bool:
+        """Check if position (x, y) is inside grid bounds and not blocked by walls."""
+        if not (0 <= x < self.width and 0 <= y < self.height):
+            return False
+        return self.base_cost[y][x] < float('inf')
 
     def set_density(self, x: int, y: int, density: float):
         """
@@ -231,27 +274,11 @@ def _find_nearest_walkable(grid: Grid, x: int, y: int, radius: int = 10) -> Opti
 
 def _simplify_path(path: list[tuple[int, int]]) -> list[tuple[int, int]]:
     """
-    Remove intermediate points on straight line segments.
-    Keeps only turning points for efficient transmission and rendering.
+    Return path directly (without simplification) to keep all intermediate points.
+    This guarantees that the line follows the curved grandstand steps perfectly
+    without drawing floating straight lines in 3D space.
     """
-    if len(path) <= 2:
-        return path
-
-    simplified = [path[0]]
-    for i in range(1, len(path) - 1):
-        prev = path[i - 1]
-        curr = path[i]
-        next_pt = path[i + 1]
-        # Check if direction changes
-        dx1 = curr[0] - prev[0]
-        dy1 = curr[1] - prev[1]
-        dx2 = next_pt[0] - curr[0]
-        dy2 = next_pt[1] - curr[1]
-        if dx1 != dx2 or dy1 != dy2:
-            simplified.append(curr)
-    simplified.append(path[-1])
-
-    return simplified
+    return path
 
 
 def _direct_path(start: tuple[int, int], goal: tuple[int, int]) -> list[tuple[int, int]]:

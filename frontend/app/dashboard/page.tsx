@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, useCallback } from 'react';
+import Link from 'next/link';
 import { useSwarmStore } from '@/lib/store';
 import {
   connectWebSocket, fetchStadium, bulkStart, triggerEmergency,
@@ -19,6 +20,8 @@ import {
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function DashboardPage() {
   const {
@@ -332,7 +335,7 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-[#FEBE10] selection:text-black">
       {/* ── Modern Header ──────────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-50 px-8 py-5 border-b border-white/10 bg-black/80 backdrop-blur-md flex items-center justify-between">
+      <header className="sticky top-0 z-50 px-8 py-5 border-b border-white/10 bg-black/80 backdrop-blur-md flex flex-col xl:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-6">
           <div className="w-10 h-10 border border-white/20 flex items-center justify-center rounded-lg">
              <Shield size={20} className="text-[#FEBE10]" />
@@ -340,7 +343,7 @@ export default function DashboardPage() {
           <div>
             <h1 className="text-xl font-black uppercase tracking-[0.2em] flex items-center gap-2">
               <span className="text-[#FEBE10]">SwarmAI</span>
-              <span className="text-white">Bernabéu Edition</span>
+              <span className="text-white">Bernabeu Edition</span>
               <span className="opacity-40 text-sm ml-2">Operations</span>
             </h1>
             <p className="text-[10px] text-emerald-500 font-mono mt-1 tracking-widest uppercase flex items-center gap-2">
@@ -365,6 +368,20 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* SwarmAI Running Status & Quick Navigation */}
+        <div className="flex flex-wrap items-center gap-2">
+            <span className="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full text-[9px] font-black tracking-widest uppercase flex items-center gap-1.5 animate-pulse">
+                <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full" />
+                ✅ SwarmAI is running!
+            </span>
+            <Link href="/" className="px-3 py-1.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                📱 Attendee App
+            </Link>
+            <Link href="/dashboard" className="px-3 py-1.5 bg-[#FEBE10] text-black hover:bg-white border border-[#FEBE10]/20 rounded-xl font-bold text-[9px] uppercase tracking-widest transition-all">
+                📊 Dashboard
+            </Link>
         </div>
 
         <div className="flex items-center gap-4">
@@ -401,10 +418,6 @@ export default function DashboardPage() {
           <button onClick={() => toggleSwarm()} className={`px-5 py-2.5 border text-[10px] font-black uppercase tracking-widest transition-colors ${swarmEnabled ? 'border-emerald-500 text-emerald-500 hover:bg-emerald-500/10' : 'border-red-500 text-red-500 hover:bg-red-500/10'}`}>
             Swarm {swarmEnabled ? 'ONLINE' : 'OFFLINE'}
           </button>
-
-          <a href="/" className="px-4 py-2.5 border border-red-500/50 hover:bg-red-500/10 hover:border-red-500 text-[10px] text-red-500 font-bold uppercase tracking-widest transition-colors rounded">
-            Exit to 3D View
-          </a>
         </div>
       </header>
 
