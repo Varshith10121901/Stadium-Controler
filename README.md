@@ -14,26 +14,17 @@ Estadio Santiago Bernabeu accommodates over 80,000 fans. Standard navigation app
 
 ```mermaid
 graph TB
-    subgraph "Frontend Layer (Next.js 15 + R3F)"
-        Client["Attendee PWA / Client UI"]
-        FPV["First-Person View (FPV) Tracker"]
-        Dashboard["Operator Control Panel"]
-        Store["Zustand State Store"]
-    end
+    Client["Attendee PWA / Client UI"]
+    FPV["First-Person View (FPV) Tracker"]
+    Dashboard["Operator Control Panel"]
+    Store["Zustand State Store"]
+    API["REST Endpoints /api/routes"]
+    WS["WS Connection Manager"]
+    Engine["SwarmEngine Simulation"]
+    Pathfinder["A*-Aisle Routing Engine"]
+    Gemini["Gemini 2.5 Flash Lite"]
+    Firestore["Firebase Firestore RTDB"]
 
-    subgraph "Backend API Layer (FastAPI on Cloud Run)"
-        API["REST Endpoints /api/routes"]
-        WS["WS Connection Manager"]
-        Engine["SwarmEngine Simulation"]
-        Pathfinder["A*-Aisle Routing Engine"]
-    end
-
-    subgraph "Google AI & Database Services"
-        Gemini["Gemini 2.5 Flash Lite"]
-        Firestore["Firebase Firestore RTDB"]
-    end
-
-    %% Flow connections
     Client -->|1. Request Route| API
     API -->|2. Request Context| Gemini
     Gemini -->|3. Suggest Destination| API
@@ -65,17 +56,15 @@ sequenceDiagram
     Engine->>AgentA: Calculate Cooperation Utility (U_a)
     Engine->>AgentB: Calculate Cooperation Utility (U_b)
     
-    rect rgba(100, 100, 100, 0.05)
-        Note over Engine: U_a = wait_time_a * cooperation_score<br/>U_b = wait_time_b * cooperation_score
-        alt U_a > U_b
-            Engine->>AgentA: Grant Pass Priority (Velocity = 1.0)
-            Engine->>AgentB: Yield / Slow Down (Velocity = 0.2)
-            Engine->>DB: Log Successful Negotiation
-        else U_b >= U_a
-            Engine->>AgentB: Grant Pass Priority (Velocity = 1.0)
-            Engine->>AgentA: Yield / Slow Down (Velocity = 0.2)
-            Engine->>DB: Log Successful Negotiation
-        end
+    Note over Engine: U_a = wait_time_a * cooperation_score<br/>U_b = wait_time_b * cooperation_score
+    alt U_a > U_b
+        Engine->>AgentA: Grant Pass Priority (Velocity = 1.0)
+        Engine->>AgentB: Yield / Slow Down (Velocity = 0.2)
+        Engine->>DB: Log Successful Negotiation
+    else U_b >= U_a
+        Engine->>AgentB: Grant Pass Priority (Velocity = 1.0)
+        Engine->>AgentA: Yield / Slow Down (Velocity = 0.2)
+        Engine->>DB: Log Successful Negotiation
     end
 ```
 
