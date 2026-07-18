@@ -1,0 +1,13 @@
+{
+  "name": "swarmai-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root workspace launcher for SwarmAI Bernabeu Edition",
+  "scripts": {
+    "postinstall": "cd frontend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "install-backend": "cd backend && python -m pip install -r requirements.txt",
+    "dev": "python all.py",
+    "build": "cd frontend && npm run build"
+  }
+}
