@@ -1,42 +1,36 @@
-# 🐝 SwarmAI Bernabeu Edition — Decentralized Attendee-Powered AI Swarm
+# SwarmAI Bernabeu Edition — Decentralized Attendee-Powered AI Swarm
 
-> **Built with [Google Antigravity](https://antigravity.withgoogle.com) | Deployed on [Google Cloud Run](https://cloud.google.com/run) | Powered by [Google Gemini AI](https://aistudio.google.com)**  
+> **Built with Google Antigravity | Deployed on Google Cloud Run | Powered by Google Gemini AI**  
 > **Turn 80,000 attendee devices into an active, self-organizing P2P AI Swarm that eliminates stadium bottleneck congestion.**
 
 ---
 
-## 📖 Chosen Vertical: Smart Stadium Operations
+## Chosen Vertical: Smart Stadium Operations
 Estadio Santiago Bernabeu accommodates over 80,000 fans. Standard navigation apps do not understand internal stadium seating tiers, aisles, or localized concession queues. **SwarmAI Bernabeu Edition** addresses this by converting every fan's smartphone into an active node in a peer-to-peer AI swarm network. Using Fruin's 1980 Crowd Science, real-time telemetry, and Google Gemini, SwarmAI calculates optimal paths along aisles and concourses, saving up to 42% in queue wait times.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TB
-    %% Styling
-    classDef client fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff;
-    classDef server fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff;
-    classDef database fill:#022c22,stroke:#34d399,stroke-width:2px,color:#fff;
-    classDef ai fill:#2e1065,stroke:#a855f7,stroke-width:2px,color:#fff;
-
     subgraph "Frontend Layer (Next.js 15 + R3F)"
-        Client["📱 Attendee PWA / Client UI"]:::client
-        FPV["🎮 First-Person View (FPV) Tracker"]:::client
-        Dashboard["📊 Operator Control Panel"]:::client
-        Store["📦 Zustand State Store"]:::client
+        Client["Attendee PWA / Client UI"]
+        FPV["First-Person View (FPV) Tracker"]
+        Dashboard["Operator Control Panel"]
+        Store["Zustand State Store"]
     end
 
     subgraph "Backend API Layer (FastAPI on Cloud Run)"
-        API["📡 REST Endpoints /api/routes"]:::server
-        WS["⚡ WS Connection Manager"]:::server
-        Engine["⚙️ SwarmEngine Simulation"]:::server
-        Pathfinder["🧭 A*-Aisle Routing Engine"]:::server
+        API["REST Endpoints /api/routes"]
+        WS["WS Connection Manager"]
+        Engine["SwarmEngine Simulation"]
+        Pathfinder["A*-Aisle Routing Engine"]
     end
 
     subgraph "Google AI & Database Services"
-        Gemini["🧠 Gemini 2.5 Flash Lite"]:::ai
-        Firestore["🔥 Firebase Firestore RTDB"]:::database
+        Gemini["Gemini 2.5 Flash Lite"]
+        Firestore["Firebase Firestore RTDB"]
     end
 
     %% Flow connections
@@ -54,16 +48,16 @@ graph TB
 
 ---
 
-## 🤝 P2P Swarm Negotiation Loop
+## P2P Swarm Negotiation Loop
 When two crowd agents encounter a bottleneck, they negotiate pass priority using game-theory utility scores:
 
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AgentA as 👤 Agent A (High Wait)
-    participant AgentB as 👤 Agent B (Low Wait)
-    participant Engine as ⚙️ SwarmEngine
-    participant DB as 🔥 Firestore
+    participant AgentA as Agent A (High Wait)
+    participant AgentB as Agent B (Low Wait)
+    participant Engine as SwarmEngine
+    participant DB as Firestore
 
     AgentA->>Engine: Send telemetry (X, Y, wait_time)
     AgentB->>Engine: Send telemetry (X, Y, wait_time)
@@ -71,7 +65,7 @@ sequenceDiagram
     Engine->>AgentA: Calculate Cooperation Utility (U_a)
     Engine->>AgentB: Calculate Cooperation Utility (U_b)
     
-    rect rgb(20, 20, 30)
+    rect rgba(100, 100, 100, 0.05)
         Note over Engine: U_a = wait_time_a * cooperation_score<br/>U_b = wait_time_b * cooperation_score
         alt U_a > U_b
             Engine->>AgentA: Grant Pass Priority (Velocity = 1.0)
@@ -87,39 +81,33 @@ sequenceDiagram
 
 ---
 
-## 🧭 A*-Aisle Routing Pipeline
+## A*-Aisle Routing Pipeline
 To ensure attendee paths are safe and never cross seats or restricted zones:
 
 ```mermaid
 graph TD
-    %% Styling
-    classDef start_node fill:#1e1b4b,stroke:#818cf8,stroke-width:1px,color:#fff;
-    classDef process_node fill:#0f172a,stroke:#3b82f6,stroke-width:1px,color:#fff;
-    classDef decision_node fill:#312e81,stroke:#6366f1,stroke-width:1px,color:#fff;
-    classDef output_node fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#fff;
-
-    Start[Selected Seat Coordinate X, Z]:::start_node --> Conv[Convert to Grid Coordinates sx, sy]:::process_node
-    Conv --> Assess{Is cell on Seat Block?}:::decision_node
+    Start[Selected Seat Coordinate X, Z] --> Conv[Convert to Grid Coordinates sx, sy]
+    Conv --> Assess{Is cell on Seat Block?}
     
-    Assess -->|Yes: Cost = 50.0| SearchAisle[Check surrounding 8-neighbors for Aisle]:::process_node
-    Assess -->|No: Cost = 1.0| RunAstar[Run A* Pathfinding to target POI]:::process_node
+    Assess -->|Yes: Cost = 50.0| SearchAisle[Check surrounding 8-neighbors for Aisle]
+    Assess -->|No: Cost = 1.0| RunAstar[Run A* Pathfinding to target POI]
     
-    SearchAisle --> AisleFound[Connect seat directly to nearest Aisle cell]:::process_node
+    SearchAisle --> AisleFound[Connect seat directly to nearest Aisle cell]
     AisleFound --> RunAstar
     
-    RunAstar --> Trace{Traverse node path}:::decision_node
-    Trace -->|Seat/Pitch Cell| CostHigh[Apply High Travel Cost Penalty 50.0]:::process_node
-    Trace -->|Aisle/Concourse| CostNormal[Apply Minimal Cost 1.0]:::process_node
+    RunAstar --> Trace{Traverse node path}
+    Trace -->|Seat/Pitch Cell| CostHigh[Apply High Travel Cost Penalty 50.0]
+    Trace -->|Aisle/Concourse| CostNormal[Apply Minimal Cost 1.0]
     
-    CostHigh --> Finalize[Produce Unsimplified Coordinate Array]:::process_node
+    CostHigh --> Finalize[Produce Unsimplified Coordinate Array]
     CostNormal --> Finalize
     
-    Finalize --> Output[3D Line conforms to grandstand curvature]:::output_node
+    Finalize --> Output[3D Line conforms to grandstand curvature]
 ```
 
 ---
 
-## 🧠 Approach & Algorithmic Logic
+## Approach & Algorithmic Logic
 
 ### 1. Aisle-Restricted A* Pathfinding
 The stadium grid is initialized as a `100x100` matrix representing physical stadium dimensions. Seats and pitch areas are assigned a high base cost (`50.0`), while aisles and outer concourse circles are assigned a low cost (`1.0`).
@@ -134,7 +122,7 @@ When crowd density spikes, virtual agents negotiate passing order. The `SwarmEng
 
 ---
 
-## 🛠️ Installation & Quickstart
+## Installation & Quickstart
 
 ### Prerequisites
 * **Python 3.12+**
@@ -159,13 +147,13 @@ npm run dev
 
 ---
 
-## 📋 Assumptions Made
+## Assumptions Made
 1. **Seating Sectors**: The stadium Grandstand consists of 16 concentric sectors separated by 8cm (0.08 rad) aisles.
 2. **Offline Fallback**: If internet connectivity is lost or `GOOGLE_API_KEY` is not provided, the system gracefully falls back to deterministic rule-based routing, keeping the app operational.
 
 ---
 
-## 🧪 Testing
+## Testing
 We maintain 79 passing tests covering simulation updates, A* pathfinding accuracy, WebSocket messages, database state transitions, and edge cases.
 ```bash
 cd backend
@@ -173,4 +161,4 @@ python -m pytest
 ```
 
 ---
-*Built with **Google Antigravity** for the **Google Antigravity Hackathon 2026**.*
+*Built with Google Antigravity for the Google Antigravity Hackathon 2026.*
