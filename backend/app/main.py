@@ -104,7 +104,10 @@ app.add_middleware(
 
 # ── Request Logging Middleware ────────────────────────────────────────────────
 import logging
-logging.basicConfig(filename='D:/Hackathons/PROMPTWARS 2/swarmai/backend.log', level=logging.INFO, format='%(asctime)s %(message)s')
+import os
+base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+log_file = os.path.join(base_dir, "backend.log")
+logging.basicConfig(filename=log_file, level=logging.INFO, format='%(asctime)s %(message)s')
 
 @app.middleware("http")
 async def log_requests(request, call_next):
