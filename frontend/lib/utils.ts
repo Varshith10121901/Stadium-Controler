@@ -12,16 +12,9 @@ export function getApiUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
+  // In browser environments, relative URL '' lets Next.js server proxy handle REST requests seamlessly
   if (typeof window !== 'undefined') {
-    const { protocol, hostname } = window.location;
-    // Support Google Cloud Shell Web Preview URLs (e.g. 3000-cs-xxx.cloudshell.dev -> 8000-cs-xxx.cloudshell.dev)
-    if (hostname.includes('cloudshell.dev') && hostname.startsWith('3000-')) {
-      return `${protocol}//${hostname.replace(/^3000-/, '8000-')}`;
-    }
-    // Support remote IP / LAN / Custom domain deployments
-    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
-      return `${protocol}//${hostname}:8000`;
-    }
+    return '';
   }
   return 'http://localhost:8000';
 }
