@@ -30,6 +30,15 @@ def main():
             venv_python = p
 
     python_exe = venv_python if venv_python else sys.executable
+    
+    # Auto-verify required backend dependencies and install if missing
+    req_check = subprocess.run([python_exe, "-c", "import uvicorn, fastapi"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if req_check.returncode != 0:
+        print(f"[SwarmAI Launcher] Missing Python dependencies in {python_exe}. Installing requirements...")
+        req_file = os.path.join(backend_dir, "requirements.txt")
+        if os.path.exists(req_file):
+            subprocess.run([python_exe, "-m", "pip", "install", "-r", req_file], cwd=backend_dir)
+
     print(f"[SwarmAI Launcher] Starting Backend (FastAPI) server using: {python_exe}...")
     
     backend_proc = subprocess.Popen(
