@@ -29,6 +29,9 @@ except ImportError:
         print("[SwarmAI] google-genai not installed — Gemini AI features will use fallback mode")
         genai = None
 
+# Expose app at module level for Gunicorn / Azure App Service / Cloud Run startup (e.g., run:app)
+from app.main import app
+
 
 def main():
     # Force UTF-8 on Windows
