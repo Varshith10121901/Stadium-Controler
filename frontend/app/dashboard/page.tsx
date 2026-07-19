@@ -8,7 +8,7 @@ import {
   toggleSwarm, exportMetricsCSV, resetSimulation, startSimulation,
   addAgents, setSimSpeed, fetchComparison, arrangeSeatingMode
 } from '@/lib/websocket';
-import { densityToColor, stadiumToCanvas, formatTime, formatNumber } from '@/lib/utils';
+import { densityToColor, stadiumToCanvas, formatTime, formatNumber, getApiUrl } from '@/lib/utils';
 import {
   LineChart, Line, AreaChart, Area, XAxis, YAxis,
   CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
@@ -20,8 +20,6 @@ import {
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 export default function DashboardPage() {
   const {

@@ -7,9 +7,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Environment, Html, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { useSwarmStore } from '@/lib/store';
+import { getApiUrl } from '@/lib/utils';
 
 // === CONSTANTS ===
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 const REAL_MADRID_GOLD = "#FEBE10";
 const REAL_MADRID_NAVY = "#00529F";
 
@@ -726,8 +726,8 @@ export default function App() {
             if (selectedSeat) {
                const sx = (selectedSeat[0] / 1.1) + 50;
                const sy = (selectedSeat[2] / 1.1) + 50;
-               const pathRes = await fetch(`${API_URL}/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}`);
-               if (pathRes.ok) {
+               const pathRes = await fetch(`${getApiUrl()}/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}`);
+               if (pathRes && pathRes.ok) {
                    const pathData = await pathRes.json();
                    if (pathData.path && pathData.path.length > 0) {
                        setMappedPath(pathData.path);
@@ -784,7 +784,7 @@ export default function App() {
         // Send to Google Gemini AI for intelligent response
         setChatMessages(prev => [...prev, { text: newMsg, isUser: true }]);
         try {
-            const geminiRes = await fetch(`${API_URL}/api/chat`, {
+            const geminiRes = await fetch(`${getApiUrl()}/api/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

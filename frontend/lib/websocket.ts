@@ -7,9 +7,7 @@
  */
 
 import { useSwarmStore } from './store';
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000';
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiUrl, getWsUrl } from './utils';
 
 let ws: WebSocket | null = null;
 let reconnectTimer: NodeJS.Timeout | null = null;
@@ -45,8 +43,9 @@ export function connectWebSocket(): void {
   const store = useSwarmStore.getState();
   store.setClientId(clientId);
 
+  const wsUrl = getWsUrl();
   try {
-    ws = new WebSocket(`${WS_URL}/ws/${clientId}`);
+    ws = new WebSocket(`${wsUrl}/ws/${clientId}`);
   } catch (err) {
     console.error('[WS] Connection failed:', err);
     scheduleReconnect();
@@ -178,72 +177,72 @@ export function disconnectWebSocket(): void {
 // ── REST API Helpers ─────────────────────────────────────────────────────────
 
 export async function fetchStadium() {
-  const res = await fetch(`${API_URL}/api/stadium`);
+  const res = await fetch(`${getApiUrl()}/api/stadium`);
   return res.json();
 }
 
 export async function fetchMetrics() {
-  const res = await fetch(`${API_URL}/api/metrics`);
+  const res = await fetch(`${getApiUrl()}/api/metrics`);
   return res.json();
 }
 
 export async function fetchMetricsHistory(limit = 100) {
-  const res = await fetch(`${API_URL}/api/metrics/history?limit=${limit}`);
+  const res = await fetch(`${getApiUrl()}/api/metrics/history?limit=${limit}`);
   return res.json();
 }
 
 export async function startSimulation(numAgents: number = 100) {
-  const res = await fetch(`${API_URL}/api/simulation/start?num_agents=${numAgents}`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/simulation/start?num_agents=${numAgents}`, { method: 'POST' });
   return res.json();
 }
 
 export async function stopSimulation() {
-  const res = await fetch(`${API_URL}/api/simulation/stop`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/simulation/stop`, { method: 'POST' });
   return res.json();
 }
 
 export async function addAgents(count: number) {
-  const res = await fetch(`${API_URL}/api/simulation/add-agents?count=${count}`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/simulation/add-agents?count=${count}`, { method: 'POST' });
   return res.json();
 }
 
 export async function toggleSwarm() {
-  const res = await fetch(`${API_URL}/api/simulation/toggle-swarm`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/simulation/toggle-swarm`, { method: 'POST' });
   return res.json();
 }
 
 export async function triggerEmergency() {
-  const res = await fetch(`${API_URL}/api/dashboard/emergency-reroute`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/dashboard/emergency-reroute`, { method: 'POST' });
   return res.json();
 }
 
 export async function bulkStart(numAgents: number = 1000) {
-  const res = await fetch(`${API_URL}/api/dashboard/bulk-start?num_agents=${numAgents}`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/dashboard/bulk-start?num_agents=${numAgents}`, { method: 'POST' });
   return res.json();
 }
 
 export async function resetSimulation() {
-  const res = await fetch(`${API_URL}/api/dashboard/reset`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/dashboard/reset`, { method: 'POST' });
   return res.json();
 }
 
 export async function arrangeSeatingMode(active: boolean) {
-  const res = await fetch(`${API_URL}/api/dashboard/seating-mode?active=${active}`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/dashboard/seating-mode?active=${active}`, { method: 'POST' });
   return res.json();
 }
 
 export async function fetchComparison() {
-  const res = await fetch(`${API_URL}/api/dashboard/comparison`);
+  const res = await fetch(`${getApiUrl()}/api/dashboard/comparison`);
   return res.json();
 }
 
 export async function fetchNegotiations(limit = 50) {
-  const res = await fetch(`${API_URL}/api/negotiations?limit=${limit}`);
+  const res = await fetch(`${getApiUrl()}/api/negotiations?limit=${limit}`);
   return res.json();
 }
 
 export async function exportMetricsCSV() {
-  const res = await fetch(`${API_URL}/api/metrics/export`);
+  const res = await fetch(`${getApiUrl()}/api/metrics/export`);
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -254,6 +253,6 @@ export async function exportMetricsCSV() {
 }
 
 export async function setSimSpeed(multiplier: number) {
-  const res = await fetch(`${API_URL}/api/simulation/speed?multiplier=${multiplier}`, { method: 'POST' });
+  const res = await fetch(`${getApiUrl()}/api/simulation/speed?multiplier=${multiplier}`, { method: 'POST' });
   return res.json();
 }

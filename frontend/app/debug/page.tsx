@@ -12,8 +12,7 @@ import Link from 'next/link';
 import { useSwarmStore } from '@/lib/store';
 import { connectWebSocket, subscribeDebug, fetchNegotiations } from '@/lib/websocket';
 import { Terminal, Radio, Pause, Play, Trash2, Download } from 'lucide-react';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+import { getApiUrl } from '@/lib/utils';
 
 export default function DebugPage() {
   const { connected, negotiations, metrics, agents } = useSwarmStore();

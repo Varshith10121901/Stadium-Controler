@@ -7,6 +7,43 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+/** Dynamic backend REST API URL helper for Localhost, Cloud Shell, LAN, & Cloud hosting */
+export function getApiUrl(): string {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location;
+    // Support Google Cloud Shell Web Preview URLs (e.g. 3000-cs-xxx.cloudshell.dev -> 8000-cs-xxx.cloudshell.dev)
+    if (hostname.includes('cloudshell.dev') && hostname.startsWith('3000-')) {
+      return `${protocol}//${hostname.replace(/^3000-/, '8000-')}`;
+    }
+    // Support remote IP / LAN / Custom domain deployments
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${protocol}//${hostname}:8000`;
+    }
+  }
+  return 'http://localhost:8000';
+}
+
+/** Dynamic backend WebSocket URL helper for Localhost, Cloud Shell, LAN, & Cloud hosting */
+export function getWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) {
+    return process.env.NEXT_PUBLIC_WS_URL;
+  }
+  if (typeof window !== 'undefined') {
+    const { protocol, hostname } = window.location;
+    const wsProtocol = protocol === 'https:' ? 'wss:' : 'ws:';
+    if (hostname.includes('cloudshell.dev') && hostname.startsWith('3000-')) {
+      return `${wsProtocol}//${hostname.replace(/^3000-/, '8000-')}`;
+    }
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1') {
+      return `${wsProtocol}//${hostname}:8000`;
+    }
+  }
+  return 'ws://localhost:8000';
+}
+
 /** Merge Tailwind classes safely (shadcn-ui pattern) */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
