@@ -36,6 +36,12 @@ from app.main import app
 def main():
     # Force UTF-8 on Windows
     os.environ["PYTHONUTF8"] = "1"
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
 
     # Configure Google Gemini if API key is available
     api_key = os.environ.get("GOOGLE_API_KEY", "")

@@ -20,13 +20,13 @@ def init_firebase():
                 firebase_admin.initialize_app()
         
         db = firestore.client()
-        print("✅ Firebase Admin SDK initialized — Firestore active")
+        print("[Firebase] Firebase Admin SDK initialized - Firestore active")
     except ImportError:
-        print("⚠️  firebase-admin not installed — Firestore writes will be skipped.")
+        print("[Firebase] firebase-admin not installed - Firestore writes will be skipped.")
         db = None
     except Exception as e:
-        print(f"⚠️  Firebase offline (local mode): {e}")
-        print("   Firestore writes will be skipped. Deploy to Cloud Run for full Firebase.")
+        print(f"[Firebase] Firebase offline (local mode): {e}")
+        print("[Firebase] Firestore writes will be skipped. Deploy to Cloud Run / GCP for full Firebase.")
         db = None
 
 init_firebase()

@@ -36,7 +36,7 @@ async def lifespan(app: FastAPI):
     On shutdown: stop simulation gracefully.
     """
     # Startup
-    print("🐝 SwarmAI Backend starting...")
+    print("[SwarmAI] SwarmAI Backend starting...")
     init_db()
 
     # Wire engine to route modules
@@ -46,7 +46,7 @@ async def lifespan(app: FastAPI):
 
     # Auto-start with 100 agents for instant demo
     await engine.start(num_agents=100)
-    print(f"🐝 Simulation running with {len(engine.agents)} agents")
+    print(f"[SwarmAI] Simulation running with {len(engine.agents)} agents")
 
     import asyncio
 
@@ -56,13 +56,13 @@ async def lifespan(app: FastAPI):
             await asyncio.sleep(15)
             counters += 1
             if counters % 4 == 0:
-                print(f"🔒 [PRIVACY-FIRST] Anonymous Temporary IDs rotated for {len(engine.agents)} connected peer nodes.", flush=True)
+                print(f"[PRIVACY-FIRST] Anonymous Temporary IDs rotated for {len(engine.agents)} connected peer nodes.", flush=True)
             elif counters % 4 == 1:
-                print(f"🤝 [SWARM-CORE] P2P Game-theory Negotiations calculating... Resolved 14 flow bottlenecks.", flush=True)
+                print(f"[SWARM-CORE] P2P Game-theory Negotiations calculating... Resolved 14 flow bottlenecks.", flush=True)
             elif counters % 4 == 2:
-                print(f"💎 [GAMIFICATION] Users earned 418 'Swarm Points' globally by avoiding congestion over the last tick.", flush=True)
+                print(f"[GAMIFICATION] Users earned 418 'Swarm Points' globally by avoiding congestion over the last tick.", flush=True)
             elif counters % 4 == 3:
-                print(f"👥 [POD-GROUPS] Synchronized 84 Family Pods using Density-Aware A* algorithms.", flush=True)
+                print(f"[POD-GROUPS] Synchronized 84 Family Pods using Density-Aware A* algorithms.", flush=True)
 
     task = asyncio.create_task(_marketing_logger_loop())
 
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     task.cancel()
-    print("🐝 SwarmAI Backend shutting down...")
+    print("[SwarmAI] SwarmAI Backend shutting down...")
     await engine.stop()
 
 

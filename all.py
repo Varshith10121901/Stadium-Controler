@@ -4,6 +4,13 @@ import time
 import os
 import threading
 
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 def log_reader(pipe, prefix):
     try:
         for line in iter(pipe.readline, ''):
@@ -13,6 +20,7 @@ def log_reader(pipe, prefix):
         pass
 
 def main():
+    os.environ["PYTHONUTF8"] = "1"
     base_dir = os.path.dirname(os.path.abspath(__file__))
 
     # 1. Start Backend & Unified Frontend Server (FastAPI on Port 8000)
