@@ -6,10 +6,8 @@ const nextConfig = {
   // output: 'export',  // Only enable for static Firebase Hosting deploy
   // trailingSlash: true, // Only enable for static Firebase Hosting deploy
   images: { unoptimized: true },
-  experimental: {
-    turbo: {
-      root: path.resolve(__dirname),
-    },
+  turbopack: {
+    root: path.resolve(__dirname),
   },
 };
 module.exports = nextConfig;
