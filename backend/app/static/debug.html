@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwarmAI — Debug Negotiation Stream</title>
+  <meta name="description" content="Real-time multi-agent negotiation stream console for SwarmAI game theory optimization debugging.">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header interactive">
+    <div class="brand-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FEBE10" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      SwarmAI <span style="font-size: 0.7rem; color: #FEBE10; opacity: 0.8; font-weight: 700;">Debug Terminal</span>
+    </div>
+
+    <div class="nav-links">
+      <a href="/" class="nav-btn">📱 Attendee App</a>
+      <a href="/dashboard" class="nav-btn">📊 Operator Dashboard</a>
+      <a href="/debug" class="nav-btn primary">🔧 Debug Console</a>
+    </div>
+  </header>
+
+  <!-- Debug Terminal Console -->
+  <div class="terminal-window">
+    <div class="hud-header" style="margin-bottom: 16px;">
+      <span>💻 Live P2P Game-Theory Negotiation Stream</span>
+      <span style="color: #10b981;">● Connected to Debug Channel</span>
+    </div>
+    
+    <div id="log-container">
+      <div class="log-entry">
+        <span class="tick">[Tick 0]</span>
+        <span class="message">SwarmAI Negotiation Stream Initialized. Subscribed to live WebSocket feed...</span>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function connectDebugWS() {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const clientId = `debug_${Date.now()}`;
+      const ws = new WebSocket(`${protocol}//${host}/ws/${clientId}`);
+
+      ws.onopen = () => {
+        ws.send(JSON.stringify({ type: 'subscribe', data: { channel: 'debug' } }));
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data);
+          if (msg.type === 'negotiation') {
+            appendLog(msg.data);
+          }
+        } catch (e) {}
+      };
+
+      ws.onclose = () => setTimeout(connectDebugWS, 3000);
+    }
+
+    function appendLog(data) {
+      const container = document.getElementById('log-container');
+      const div = document.createElement('div');
+      div.className = 'log-entry';
+      const isAccepted = data.accepted || data.outcome === 'accepted';
+      div.innerHTML = `
+        <span class="tick">[Tick ${data.tick || 0}]</span>
+        <span class="outcome ${isAccepted ? 'accepted' : 'rejected'}">${isAccepted ? '✅ [ACCEPTED]' : '❌ [REJECTED]'}</span>
+        <span class="message">${data.message || `Agents ${data.agent_a} & ${data.agent_b}: ${data.proposal}`}</span>
+      `;
+      container.insertBefore(div, container.firstChild);
+    }
+
+    window.addEventListener('DOMContentLoaded', connectDebugWS);
+  </script>
+</body>
+</html>

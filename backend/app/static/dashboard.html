@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SwarmAI — Operator Dashboard (Estadio Santiago Bernabéu)</title>
+  <meta name="description" content="Real-time stadium crowd management operator console with Fruin LoS grading, live heatmap telemetry, emergency evacuation trigger, and gate staggering.">
+  <link rel="stylesheet" href="/static/style.css">
+  
+  <!-- Chart.js via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="app-header interactive">
+    <div class="brand-title">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#FEBE10" stroke-width="2.5"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      SwarmAI <span style="font-size: 0.7rem; color: #FEBE10; opacity: 0.8; font-weight: 700;">Operator Console</span>
+    </div>
+
+    <div class="nav-links">
+      <a href="/" class="nav-btn">📱 Attendee App</a>
+      <a href="/dashboard" class="nav-btn primary">📊 Operator Dashboard</a>
+      <a href="/debug" class="nav-btn">🔧 Debug Console</a>
+    </div>
+  </header>
+
+  <!-- Dashboard Main Grid Layout -->
+  <div class="dashboard-grid">
+    
+    <!-- Left Column: Metrics Cards, 2D Heatmap, Live Charts -->
+    <div class="left-col">
+      
+      <!-- Top Metrics Cards -->
+      <div class="metrics-row">
+        <div class="metric-card glass-panel">
+          <div class="title">Active Agents</div>
+          <div class="big-num" id="stat-agents">100</div>
+          <div style="font-size: 0.7rem; color: #10b981;">● 100% Synced</div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="title">Avg Wait Time</div>
+          <div class="big-num" id="stat-wait">2.4m</div>
+          <div style="font-size: 0.7rem; color: #10b981;">⚡ -42% Swarm Savings</div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="title">Flow Efficiency</div>
+          <div class="big-num" id="stat-flow">88.4%</div>
+          <div style="font-size: 0.7rem; color: #10b981;">↑ Optimal Vector Flow</div>
+        </div>
+
+        <div class="metric-card glass-panel">
+          <div class="title">Level of Service (LoS)</div>
+          <div class="big-num" id="stat-los-text">Grade A</div>
+          <div class="badge los-a" id="stat-los-badge">LoS A (Excellent)</div>
+        </div>
+      </div>
+
+      <!-- Live 2D Stadium Heatmap -->
+      <div class="glass-panel" style="padding: 20px; margin-bottom: 20px;">
+        <div class="hud-header" style="margin-bottom: 12px;">
+          <span>🔥 Real-Time Crowd Density Heatmap (100x100 Stadium Grid)</span>
+          <span style="color: #10b981;">● Live Grid Stream</span>
+        </div>
+        <div class="heatmap-container">
+          <canvas id="heatmap-canvas" width="600" height="380"></canvas>
+        </div>
+      </div>
+
+      <!-- Live Chart -->
+      <div class="glass-panel" style="padding: 20px;">
+        <div class="hud-header" style="margin-bottom: 12px;">
+          <span>📈 Crowd Wait Time & Flow Vector Telemetry</span>
+        </div>
+        <div style="height: 240px; position: relative;">
+          <canvas id="metrics-chart"></canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Column: Controls & Emergency Triggers -->
+    <div class="right-col">
+      <div class="glass-panel controls-panel">
+        <div class="hud-header">
+          <span>⚡ Swarm Operator Controls</span>
+        </div>
+
+        <button id="btn-emergency" class="ctrl-btn danger" onclick="triggerEmergency()">
+          🚨 EMERGENCY EVACUATION REROUTE
+        </button>
+
+        <div style="margin-top: 10px;">
+          <div class="hud-header" style="margin-bottom: 8px;">Gate Staggering & Controls</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="ctrl-btn" onclick="toggleGate('Gate A')">Gate A: OPEN</button>
+            <button class="ctrl-btn" onclick="toggleGate('Gate B')">Gate B: OPEN</button>
+            <button class="ctrl-btn" onclick="toggleGate('Gate C')">Gate C: OPEN</button>
+            <button class="ctrl-btn" onclick="toggleGate('Gate D')">Gate D: STAGGERED</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <div class="hud-header" style="margin-bottom: 8px;">Bulk Agent Spawner</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+            <button class="ctrl-btn" onclick="addAgents(100)">+100 Agents</button>
+            <button class="ctrl-btn" onclick="addAgents(500)">+500 Agents</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <div class="hud-header" style="margin-bottom: 8px;">Simulation Speed</div>
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+            <button class="ctrl-btn" onclick="setSpeed(1)">1x</button>
+            <button class="ctrl-btn" onclick="setSpeed(2)">2x</button>
+            <button class="ctrl-btn" onclick="setSpeed(5)">5x</button>
+          </div>
+        </div>
+
+        <div style="margin-top: 10px;">
+          <button class="ctrl-btn" onclick="exportCSV()" style="width: 100%;">
+            📥 Export Telemetry CSV
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

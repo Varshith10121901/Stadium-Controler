@@ -124,19 +124,39 @@ app.include_router(gemini.router)  # Google Gemini AI-powered chat
 app.include_router(firestore.router) # Firebase metrics saving
 
 
-# ── Root Endpoint ─────────────────────────────────────────────────────────────
-@app.get("/")
-async def root():
-    """Health check and API info."""
-    return {
-        "app": "SwarmAI",
-        "version": "1.0.0",
-        "status": "running",
-        "simulation": engine.get_status(),
-        "docs": "/docs",
-        "description": "Decentralized AI swarm for stadium crowd intelligence",
-    }
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+import os
 
+# ── Mount Static Assets ──────────────────────────────────────────────────────
+static_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+# ── HTML Page Routes ─────────────────────────────────────────────────────────
+@app.get("/", response_class=FileResponse)
+async def serve_index():
+    """Serve the 3D Santiago Bernabéu Attendee App."""
+    index_path = os.path.join(static_dir, "index.html")
+    if os.path.exists(index_path):
+        return FileResponse(index_path)
+    return {"app": "SwarmAI", "status": "running"}
+
+@app.get("/dashboard", response_class=FileResponse)
+async def serve_dashboard():
+    """Serve the Operator Dashboard with live crowd density heatmap."""
+    dash_path = os.path.join(static_dir, "dashboard.html")
+    if os.path.exists(dash_path):
+        return FileResponse(dash_path)
+    return {"app": "SwarmAI Operator Dashboard", "status": "running"}
+
+@app.get("/debug", response_class=FileResponse)
+async def serve_debug():
+    """Serve the Debug Console with live P2P agent negotiation stream."""
+    debug_path = os.path.join(static_dir, "debug.html")
+    if os.path.exists(debug_path):
+        return FileResponse(debug_path)
+    return {"app": "SwarmAI Debug Console", "status": "running"}
 
 @app.get("/api/health")
 async def health_check():
