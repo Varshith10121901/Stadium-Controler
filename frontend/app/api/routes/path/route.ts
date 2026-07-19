@@ -1,33 +1,34 @@
 import { NextResponse } from 'next/server';
+import { findPath, TARGET_POIS } from '@/lib/routing';
 
+/**
+ * GET /api/routes/path?start_x=&start_y=&target_type=gate|restroom|concession&accessible=true
+ *
+ * Returns an aisle-restricted A* path from the seat to the requested POI.
+ * `accessible=true` switches the cost profile to avoid stairs and prefer
+ * ramps/elevators (wheelchair-aware routing).
+ */
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const start_x = parseFloat(searchParams.get('start_x') || '50');
   const start_y = parseFloat(searchParams.get('start_y') || '50');
-  const target_type = searchParams.get('target_type') || 'gate';
+  const target_type = (searchParams.get('target_type') || 'gate').toLowerCase();
+  const accessible = searchParams.get('accessible') === 'true';
 
-  let target_x = 50;
-  let target_y = start_y > 50 ? 95 : 5;
+  const poi = TARGET_POIS[target_type] ?? TARGET_POIS.gate;
+  const target_x = poi.x;
+  const target_y = start_y > 50 ? Math.min(95, poi.y + 40) : Math.max(5, poi.y);
 
-  if (target_type === 'restroom' || target_type === 'merchandise') {
-    target_x = 12;
-    target_y = 88;
-  } else if (target_type === 'concession') {
-    target_x = 88;
-    target_y = 50;
-  }
-
-  const concourseY = start_y > 50 ? 92 : 8;
-  const path = [
-    [start_x, start_y],
-    [start_x, concourseY],
-    [target_x, target_y]
-  ];
+  const result = findPath(start_x, start_y, target_x, target_y, accessible);
 
   return NextResponse.json({
-    path,
+    path: result.path,
     target_type,
-    distance: Math.hypot(target_x - start_x, target_y - start_y),
-    estimated_time: "1.8 mins"
+    target_label: poi.label,
+    distance: result.distance,
+    estimated_time: result.estimated_time,
+    accessible,
+    cells_traversed: result.cells_traversed,
+    algorithm: 'A*-aisle',
   });
 }

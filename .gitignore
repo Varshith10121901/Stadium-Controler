@@ -23,6 +23,11 @@ Thumbs.db
 
 # Logs
 *.log
-backend/
+
+# TypeScript Build Info
+*.tsbuildinfo
+
+# Tooling metadata
+.zcode/
 
 

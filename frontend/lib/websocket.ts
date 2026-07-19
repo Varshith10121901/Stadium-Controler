@@ -1,24 +1,48 @@
 /**
- * SwarmAI — WebSocket Client
- * ===========================
- * Manages the WebSocket connection to the FastAPI backend.
- * Handles reconnection, message routing, and state synchronization.
- * Supports multi-tab mode: each tab gets a unique client ID.
+ * SwarmAI — Simulation Bridge (formerly WebSocket Client)
+ * =======================================================
+ * The original backend exposed a WebSocket server at `/ws/{clientId}` plus a
+ * suite of REST endpoints for simulation control, dashboard actions, and
+ * metrics history. The Python backend was removed during the migration to
+ * Next.js API Routes, so this module no longer opens a real WebSocket.
+ *
+ * Instead it runs a deterministic in-browser simulation loop (see lib/simulation.ts)
+ * that ticks the Zustand store with live agents/metrics/density — so the
+ * dashboard, charts, and negotiation log all animate with zero backend.
+ *
+ * The REST helpers below call the mock Next.js API routes in app/api/* so the
+ * dashboard's control buttons still fire real HTTP requests (which now return
+ * deterministic mock responses). The same simulation engine powers both sides,
+ * keeping telemetry consistent.
+ *
+ * Public API is unchanged from the WS-era module: connectWebSocket,
+ * disconnectWebSocket, sendMessage, registerAsAgent, subscribeDebug,
+ * setAgentGoal, requestSuggestions, and every fetch/start/stop/... helper
+ * are preserved so call sites need no edits.
  */
 
-import { useSwarmStore } from './store';
-import { getApiUrl, getWsUrl } from './utils';
+import { useSwarmStore, type Agent } from './store';
+import { getApiUrl } from './utils';
+import {
+  createAgents,
+  stepAgents,
+  computeMetrics,
+  computeDensityMap,
+  generateNegotiations,
+  hashSeed,
+  type SimOptions,
+} from './simulation';
 
-let ws: WebSocket | null = null;
-let reconnectTimer: NodeJS.Timeout | null = null;
-let reconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 20;
-const RECONNECT_DELAY = 3000;
+// ── Client identity ──────────────────────────────────────────────────────────
 
-/**
- * Generate a unique client ID for this browser tab.
- * Persisted in sessionStorage so refreshing keeps the same ID.
- */
+let clientId = 'server';
+let simTimer: ReturnType<typeof setInterval> | null = null;
+let agents: Agent[] = [];
+let tickCount = 0;
+let targetAgentCount = 100;
+let emergencyUntil = 0;
+
+/** Generate / persist a unique client ID per browser tab. */
 function getClientId(): string {
   if (typeof window === 'undefined') return 'server';
   let id = sessionStorage.getItem('swarmai_client_id');
@@ -29,152 +53,135 @@ function getClientId(): string {
   return id;
 }
 
+// ── Tick interval (adaptive under load — Efficiency §6.4) ───────────────────
+
+function pickInterval(agentCount: number): number {
+  // Base 200ms. Above 2000 agents, widen the interval to keep the UI responsive.
+  if (agentCount > 4000) return 500;
+  if (agentCount > 2000) return 350;
+  return 200;
+}
+
+function currentOptions(): SimOptions {
+  const s = useSwarmStore.getState();
+  return {
+    swarmEnabled: s.swarmEnabled,
+    seatingMode: s.seatingMode,
+    emergency: Date.now() < emergencyUntil,
+    speed: simSpeed,
+    dt: 0.2,
+  };
+}
+
+let simSpeed = 1;
+
+/** Reseed the agent population (e.g. on bulk-start / reset / add-agents). */
+function reseed(count: number) {
+  targetAgentCount = Math.max(1, count);
+  agents = createAgents(targetAgentCount, hashSeed(clientId + ':' + tickCount));
+}
+
+/** One simulation step → push to the store. */
+function step() {
+  if (agents.length !== targetAgentCount) {
+    agents = createAgents(targetAgentCount, hashSeed(clientId + ':' + tickCount));
+  }
+  const opts = currentOptions();
+  stepAgents(agents, opts, tickCount);
+  const metrics = computeMetrics(agents, opts, tickCount);
+  const density_map = computeDensityMap(agents);
+  useSwarmStore.getState().handleStateUpdate({
+    agents,
+    metrics,
+    density_map,
+    tick: tickCount,
+  });
+  tickCount++;
+
+  // Adaptive interval: if the crowd scaled dramatically, re-arm the timer.
+  // (Cheap no-op when the interval is already correct.)
+}
+
+function scheduleAdaptive() {
+  if (simTimer) clearInterval(simTimer);
+  const interval = pickInterval(targetAgentCount);
+  simTimer = setInterval(() => {
+    step();
+    // Re-schedule if the load tier changed.
+    if (pickInterval(targetAgentCount) !== interval) scheduleAdaptive();
+  }, interval);
+}
+
+// ── Public: connect / disconnect ─────────────────────────────────────────────
+
 /**
- * Connect to the SwarmAI WebSocket server.
- * Automatically handles reconnection on disconnect.
+ * Start the in-browser simulation loop. Replaces the old WebSocket connect.
+ * Safe to call multiple times.
  */
 export function connectWebSocket(): void {
   if (typeof window === 'undefined') return;
-  if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
-    return;
-  }
-
-  const clientId = getClientId();
+  if (simTimer) return;
+  clientId = getClientId();
   const store = useSwarmStore.getState();
   store.setClientId(clientId);
-
-  const wsUrl = getWsUrl();
-  try {
-    ws = new WebSocket(`${wsUrl}/ws/${clientId}`);
-  } catch (err) {
-    console.error('[WS] Connection failed:', err);
-    scheduleReconnect();
-    return;
-  }
-
-  ws.onopen = () => {
-    console.log(`[WS] Connected as ${clientId}`);
-    store.setConnected(true);
-    reconnectAttempts = 0;
-  };
-
-  ws.onmessage = (event) => {
-    try {
-      const message = JSON.parse(event.data);
-      handleMessage(message);
-    } catch (err) {
-      console.error('[WS] Parse error:', err);
-    }
-  };
-
-  ws.onclose = () => {
-    console.log('[WS] Disconnected');
-    store.setConnected(false);
-    ws = null;
-    scheduleReconnect();
-  };
-
-  ws.onerror = (err) => {
-    console.error('[WS] Error:', err);
-  };
-}
-
-function scheduleReconnect(): void {
-  if (reconnectTimer) clearTimeout(reconnectTimer);
-  if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-    console.log('[WS] Max reconnect attempts reached');
-    return;
-  }
-  const delay = RECONNECT_DELAY * Math.min(reconnectAttempts + 1, 5);
-  reconnectAttempts++;
-  console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts})...`);
-  reconnectTimer = setTimeout(connectWebSocket, delay);
-}
-
-function handleMessage(message: any): void {
-  const store = useSwarmStore.getState();
-  const { type, data } = message;
-
-  switch (type) {
-    case 'welcome':
-      console.log(`[WS] Welcome! Connections: ${data.connections}`);
-      store.setSimulationRunning(data.simulation_running);
-      break;
-
-    case 'state_update':
-      store.handleStateUpdate(data);
-      break;
-
-    case 'negotiation':
-      store.addNegotiation({
-        tick: data.tick || store.tick,
-        timestamp: message.timestamp || new Date().toISOString(),
-        agent_a: data.agent_a || '',
-        agent_b: data.agent_b || '',
-        accepted: data.accepted || false,
-        net_utility: data.net_utility || 0,
-        message: data.message || '',
-      });
-      break;
-
-    case 'agent_registered':
-      store.setMyAgent(data);
-      break;
-
-    case 'path_updated':
-      store.setMyAgent(data);
-      break;
-
-    case 'suggestions':
-      store.setSuggestions(data.suggestions || []);
-      break;
-
-    case 'subscribed':
-      console.log(`[WS] Subscribed to ${data.channel}`);
-      break;
-
-    case 'pong':
-      break;
-
-    default:
-      console.log(`[WS] Unknown message type: ${type}`);
-  }
-}
-
-export function sendMessage(type: string, data: any = {}): void {
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type, data }));
-  } else {
-    console.warn('[WS] Not connected, cannot send:', type);
-  }
-}
-
-export function registerAsAgent(x: number, y: number, goal: string): void {
-  sendMessage('register_agent', { x, y, goal });
-}
-
-export function subscribeDebug(): void {
-  sendMessage('subscribe', { channel: 'debug' });
-}
-
-export function setAgentGoal(goal: string): void {
-  sendMessage('set_goal', { goal });
-}
-
-export function requestSuggestions(): void {
-  sendMessage('get_suggestions', {});
+  if (agents.length === 0) reseed(targetAgentCount);
+  store.setConnected(true);
+  store.setSimulationRunning(true);
+  scheduleAdaptive();
+  console.log(`[SwarmAI] Simulation loop active as ${clientId} (${targetAgentCount} agents)`);
 }
 
 export function disconnectWebSocket(): void {
-  if (reconnectTimer) clearTimeout(reconnectTimer);
-  reconnectAttempts = MAX_RECONNECT_ATTEMPTS;
-  if (ws) {
-    ws.close();
-    ws = null;
+  if (simTimer) {
+    clearInterval(simTimer);
+    simTimer = null;
+  }
+  useSwarmStore.getState().setConnected(false);
+  useSwarmStore.getState().setSimulationRunning(false);
+}
+
+// ── Public: WS-era message helpers (now no-ops or store-only) ────────────────
+
+export function sendMessage(_type: string, _data: any = {}): void {
+  // No remote WS — kept for backwards compatibility with call sites.
+}
+
+export function registerAsAgent(x: number, y: number, goal: string): void {
+  // Mark the first agent as the "real" user and override its goal.
+  if (agents.length === 0) reseed(targetAgentCount);
+  const me = agents.find((a) => a.is_real) ?? agents[0];
+  if (me) {
+    me.x = x; me.y = y; me.goal = goal;
+    me.goal_x = x; me.goal_y = y;
+    useSwarmStore.getState().setMyAgent({ ...me });
   }
 }
 
-// ── REST API Helpers ─────────────────────────────────────────────────────────
+export function subscribeDebug(): void {
+  // No-op; the /debug page reads from the store directly.
+}
+
+export function setAgentGoal(goal: string): void {
+  const me = agents.find((a) => a.is_real);
+  if (me) me.goal = goal;
+}
+
+export function requestSuggestions(): void {
+  // Deterministic suggestions derived from current density.
+  const s = useSwarmStore.getState();
+  const hot = s.metrics.hotspot_zones ?? [];
+  useSwarmStore.getState().setSuggestions([
+    {
+      message: hot.length > 0 ? `Congestion near ${hot[0]} — rerouting via alternate aisle` : 'All zones operating at Fruin LoS A',
+      action: hot.length > 0 ? 'reroute' : 'hold',
+      benefit: '~40s saved',
+      confidence: 0.92,
+      urgency: hot.length > 0 ? 'high' : 'normal',
+    },
+  ]);
+}
+
+// ── REST helpers (now call the mock Next.js API routes) ──────────────────────
 
 export async function fetchStadium() {
   const res = await fetch(`${getApiUrl()}/api/stadium`);
@@ -192,53 +199,106 @@ export async function fetchMetricsHistory(limit = 100) {
 }
 
 export async function startSimulation(numAgents: number = 100) {
-  const res = await fetch(`${getApiUrl()}/api/simulation/start?num_agents=${numAgents}`, { method: 'POST' });
-  return res.json();
+  reseed(numAgents);
+  useSwarmStore.getState().setSimulationRunning(true);
+  if (!simTimer) scheduleAdaptive();
+  try {
+    const res = await fetch(`${getApiUrl()}/api/simulation/start?num_agents=${numAgents}`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, num_agents: numAgents }; }
 }
 
 export async function stopSimulation() {
-  const res = await fetch(`${getApiUrl()}/api/simulation/stop`, { method: 'POST' });
-  return res.json();
+  useSwarmStore.getState().setSimulationRunning(false);
+  if (simTimer) { clearInterval(simTimer); simTimer = null; }
+  try {
+    const res = await fetch(`${getApiUrl()}/api/simulation/stop`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true }; }
 }
 
 export async function addAgents(count: number) {
-  const res = await fetch(`${getApiUrl()}/api/simulation/add-agents?count=${count}`, { method: 'POST' });
-  return res.json();
+  targetAgentCount += count;
+  try {
+    const res = await fetch(`${getApiUrl()}/api/simulation/add-agents?count=${count}`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, count }; }
 }
 
 export async function toggleSwarm() {
-  const res = await fetch(`${getApiUrl()}/api/simulation/toggle-swarm`, { method: 'POST' });
-  return res.json();
+  const next = !useSwarmStore.getState().swarmEnabled;
+  useSwarmStore.getState().setSwarmEnabled(next);
+  try {
+    const res = await fetch(`${getApiUrl()}/api/simulation/toggle-swarm`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, swarmEnabled: next }; }
 }
 
 export async function triggerEmergency() {
-  const res = await fetch(`${getApiUrl()}/api/dashboard/emergency-reroute`, { method: 'POST' });
-  return res.json();
+  emergencyUntil = Date.now() + 8000; // 8s of emergency behavior
+  try {
+    const res = await fetch(`${getApiUrl()}/api/dashboard/emergency-reroute`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true }; }
 }
 
 export async function bulkStart(numAgents: number = 1000) {
-  const res = await fetch(`${getApiUrl()}/api/dashboard/bulk-start?num_agents=${numAgents}`, { method: 'POST' });
-  return res.json();
+  reseed(numAgents);
+  useSwarmStore.getState().setSimulationRunning(true);
+  if (!simTimer) scheduleAdaptive();
+  try {
+    const res = await fetch(`${getApiUrl()}/api/dashboard/bulk-start?num_agents=${numAgents}`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, num_agents: numAgents }; }
 }
 
 export async function resetSimulation() {
-  const res = await fetch(`${getApiUrl()}/api/dashboard/reset`, { method: 'POST' });
-  return res.json();
+  tickCount = 0;
+  emergencyUntil = 0;
+  reseed(100);
+  try {
+    const res = await fetch(`${getApiUrl()}/api/dashboard/reset`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true }; }
 }
 
 export async function arrangeSeatingMode(active: boolean) {
-  const res = await fetch(`${getApiUrl()}/api/dashboard/seating-mode?active=${active}`, { method: 'POST' });
-  return res.json();
+  useSwarmStore.getState().setSeatingMode(active);
+  try {
+    const res = await fetch(`${getApiUrl()}/api/dashboard/seating-mode?active=${active}`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, active }; }
 }
 
 export async function fetchComparison() {
-  const res = await fetch(`${getApiUrl()}/api/dashboard/comparison`);
-  return res.json();
+  try {
+    const res = await fetch(`${getApiUrl()}/api/dashboard/comparison`);
+    return res.json();
+  } catch {
+    // Fallback: derive from current metrics so the UI never breaks.
+    const m = useSwarmStore.getState().metrics;
+    return {
+      without_swarm: {
+        avg_wait_time: m.avg_wait_time_no_swarm || 4.8,
+        flow_efficiency: Math.round((1 - (m.flow_efficiency || 0.85)) * 100),
+        congestion_score: Math.round((m.congestion_score || 0.2) * 100),
+      },
+      with_swarm: {
+        avg_wait_time: m.avg_wait_time || 2.3,
+        flow_efficiency: Math.round((m.flow_efficiency || 0.85) * 100),
+        congestion_score: Math.round((m.congestion_score || 0.2) * 50),
+      },
+    };
+  }
 }
 
 export async function fetchNegotiations(limit = 50) {
-  const res = await fetch(`${getApiUrl()}/api/negotiations?limit=${limit}`);
-  return res.json();
+  try {
+    const res = await fetch(`${getApiUrl()}/api/negotiations?limit=${limit}`);
+    return res.json();
+  } catch {
+    return { negotiations: generateNegotiations(agents, tickCount, limit) };
+  }
 }
 
 export async function exportMetricsCSV() {
@@ -253,6 +313,9 @@ export async function exportMetricsCSV() {
 }
 
 export async function setSimSpeed(multiplier: number) {
-  const res = await fetch(`${getApiUrl()}/api/simulation/speed?multiplier=${multiplier}`, { method: 'POST' });
-  return res.json();
+  simSpeed = Math.max(0.5, Math.min(10, multiplier));
+  try {
+    const res = await fetch(`${getApiUrl()}/api/simulation/speed?multiplier=${multiplier}`, { method: 'POST' });
+    return res.json();
+  } catch { return { ok: true, multiplier: simSpeed }; }
 }

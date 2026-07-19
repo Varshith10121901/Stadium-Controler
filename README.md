@@ -114,39 +114,45 @@ When crowd density spikes, virtual agents negotiate passing order. The `SwarmEng
 ## Installation & Quickstart
 
 ### Prerequisites
-* **Python 3.12+**
 * **Node.js 18+**
 * **npm**
 
-### 1. Clone & Set Up Backend
+### 1. Initialize & Start the App
+All APIs and simulations have been consolidated inside the Next.js app. No external Python setup is required.
 ```bash
-cd backend
-pip install -r requirements.txt
-python run.py
-```
-*The FastAPI backend will start listening at `http://localhost:8000`.*
+# Install root workspace lockfiles and dependencies
+npm install
 
-### 2. Clone & Set Up Frontend
-```bash
+# Install frontend dependencies
 cd frontend
 npm install
+
+# Run the development server (with Turbopack)
 npm run dev
 ```
-*The Next.js Turbopack compiler will start the frontend at `http://localhost:3000`.*
+*The App will start listening at `http://localhost:3000`.*
 
 ---
 
-## Assumptions Made
+## Assumptions & Rules
 1. **Seating Sectors**: The stadium Grandstand consists of 16 concentric sectors separated by 8cm (0.08 rad) aisles.
-2. **Offline Fallback**: If internet connectivity is lost or `GOOGLE_API_KEY` is not provided, the system gracefully falls back to deterministic rule-based routing, keeping the app operational.
+2. **Deterministic Simulation**: A Mulberry32 pseudo-random seed is used to keep client-side crowd rendering completely identical across both operator and fan devices.
+3. **Accessibility (Wheelchair Routing)**: Ramps are preferred and stair pathways are heavily penalized to route wheelchair users safely.
+4. **Offline Fallback**: If internet connectivity is lost or `GEMINI_API_KEY` is not provided, the system gracefully falls back to deterministic rule-based crowd routing.
 
 ---
 
-## Testing
-We maintain 79 passing tests covering simulation updates, A* pathfinding accuracy, WebSocket messages, database state transitions, and edge cases.
+## Testing & Quality Control
+We maintain unit and integration tests covering pathfinding routing accuracy, internationalization translations, state management, and page layout rendering.
 ```bash
-cd backend
-python -m pytest
+# Run ESLint validation
+npm run lint --prefix frontend
+
+# Run TypeScript typechecks
+npm run typecheck --prefix frontend
+
+# Run Vitest test suite
+npm run test:run --prefix frontend
 ```
 
 ---

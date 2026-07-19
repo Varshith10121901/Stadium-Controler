@@ -9,17 +9,17 @@ import {
   addAgents, setSimSpeed, fetchComparison, arrangeSeatingMode
 } from '@/lib/websocket';
 import { densityToColor, stadiumToCanvas, formatTime, formatNumber, getApiUrl } from '@/lib/utils';
-import {
-  LineChart, Line, AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
-} from 'recharts';
+import dynamic from 'next/dynamic';
 import {
   AlertTriangle, Activity, Users, Zap, Download,
   RotateCcw, TrendingDown, Radio, Eye, Shield,
-  Gauge, ArrowUpRight, ArrowDownRight, Layers, Cpu, MousePointer2
+  Gauge, ArrowUpRight, ArrowDownRight, Layers, Cpu, MousePointer2, Leaf
 } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+
+const StatusPieChart = dynamic(() => import('@/components/DashboardCharts').then(m => m.StatusPieChart), { ssr: false });
+const DynamicsCharts = dynamic(() => import('@/components/DashboardCharts').then(m => m.DynamicsCharts), { ssr: false });
 
 export default function DashboardPage() {
   const {
@@ -481,6 +481,8 @@ export default function DashboardPage() {
               ref={canvasRef}
               onMouseMove={handleCanvasMouseMove}
               onMouseLeave={handleCanvasMouseLeave}
+              role="img"
+              aria-label="Real-time stadium crowd heatmap showing crowd density levels across seating rows and concourses"
               className={`w-full h-auto cursor-crosshair border border-white/5 opacity-90 hover:opacity-100 transition-opacity ${showBeforeAfter ? 'hidden' : 'block'}`}
           />
         </div>
@@ -496,14 +498,7 @@ export default function DashboardPage() {
             )}
           </h2>
           <div className="h-40 mb-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" innerRadius={40} outerRadius={60} stroke="none" dataKey="value" nameKey="label">
-                  {pieData.map((entry, index) => <Cell key={index} fill={STATUS_COLORS[entry.name]} />)}
-                </Pie>
-                <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '0', fontSize: '10px', textTransform: 'uppercase' }} />
-              </PieChart>
-            </ResponsiveContainer>
+            <StatusPieChart pieData={pieData} STATUS_COLORS={STATUS_COLORS} />
           </div>
           
           <div className="space-y-3 mt-auto">
@@ -558,39 +553,7 @@ export default function DashboardPage() {
       </div>
 
       {/* ── Charts ────────────────────────────────────────────────── */}
-        <div className="col-span-12 grid grid-cols-2 gap-6 mt-4">
-           <div className="border border-white/10 p-5">
-              <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6">Wait Time Algorithm vs Baseline</h3>
-              <div className="h-48">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                       <XAxis dataKey="tick" hide />
-                       <YAxis tick={{ fontSize: 9, fill: '#666' }} width={30} axisLine={false} tickLine={false} />
-                       <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #333', fontSize: '10px' }} />
-                       <Line type="stepAfter" dataKey="Wait (Baseline)" stroke="#ef4444" strokeWidth={1} dot={false} />
-                       <Line type="stepAfter" dataKey="Wait (Swarm)" stroke="#10b981" strokeWidth={2} dot={false} />
-                    </LineChart>
-                 </ResponsiveContainer>
-              </div>
-           </div>
-
-           <div className="border border-white/10 p-5">
-              <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6">Efficiency Dynamics</h3>
-              <div className="h-48">
-                 <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData}>
-                       <CartesianGrid strokeDasharray="3 3" stroke="#222" vertical={false} />
-                       <XAxis dataKey="tick" hide />
-                       <YAxis tick={{ fontSize: 9, fill: '#666' }} width={30} domain={[0, 100]} axisLine={false} tickLine={false} />
-                       <Tooltip contentStyle={{ backgroundColor: '#000', border: '1px solid #333', fontSize: '10px' }} />
-                       <Line type="monotone" dataKey="flow" stroke="#FEBE10" strokeWidth={2} dot={false} />
-                       <Line type="monotone" dataKey="congestion" stroke="#4b5563" strokeWidth={1} dot={false} />
-                    </LineChart>
-                 </ResponsiveContainer>
-              </div>
-           </div>
-        </div>
+      <DynamicsCharts chartData={chartData} />
 
       </div>
       
@@ -601,25 +564,41 @@ export default function DashboardPage() {
         <MetricCard label="Route Efficiency" value={`${Math.round(metrics.flow_efficiency)}%`} icon={Gauge} color="text-white" />
         <MetricCard label="Peer Negotiations" value={formatNumber(metrics.negotiations_total)} icon={Zap} color="text-white" />
         <MetricCard label="Global Congestion" value={`${Math.round(metrics.congestion_score)}%`} icon={AlertTriangle} color="text-white" />
-        
-        <div className="col-span-2 border border-white/10 bg-white/5 p-5 flex flex-col justify-between">
-           <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Gate Controls</div>
-           <div className="grid grid-cols-2 gap-2 mb-4">
-             {gatesRef.current.map(g => (
-                <button 
-                  key={g.id} 
-                  onClick={() => { g.status = g.status === 'open' ? 'closed' : 'open'; setGateUI(v => v+1); }}
-                  className={`py-1.5 text-[9px] font-black tracking-widest border transition-colors ${g.status === 'open' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/50' : 'bg-red-500/10 text-red-500 border-red-500/50'}`}
-                >
-                   {g.name}
-                </button>
-             ))}
+        <MetricCard label="Estimated CO2 Saved" value={`${(metrics.wait_time_reduction_pct * metrics.total_agents * 0.0005).toFixed(1)} kg`} icon={Leaf} color="text-emerald-400" />
+      </div>
+
+      <div className="p-8 grid grid-cols-12 gap-6 pt-0">
+        <div className="col-span-12 border border-white/10 bg-white/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+           <div className="flex-1">
+             <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">Gate Controls</div>
+             <div className="grid grid-cols-4 gap-2" role="group" aria-label="Stadium gate status controls">
+               {gatesRef.current.map(g => (
+                  <button 
+                    key={g.id} 
+                    onClick={() => { g.status = g.status === 'open' ? 'closed' : 'open'; setGateUI(v => v+1); }}
+                    aria-label={`Toggle status for ${g.name}. Current status: ${g.status}`}
+                    aria-pressed={g.status === 'open'}
+                    className={`py-1.5 text-[9px] font-black tracking-widest border transition-colors ${g.status === 'open' ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/50' : 'bg-red-500/10 text-red-500 border-red-500/50'}`}
+                  >
+                     {g.name} ({g.status.toUpperCase()})
+                  </button>
+               ))}
+             </div>
            </div>
            
-           <div className="text-[10px] text-gray-500 font-black uppercase tracking-widest mb-2">Override</div>
-           <button onClick={handleEmergency} disabled={isEmergency} className={`w-full py-2 font-black text-[10px] uppercase tracking-widest transition-all ${isEmergency ? 'bg-red-600 text-white animate-pulse' : 'border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white'}`}>
-            {isEmergency ? 'EVACUATING...' : 'TRIGGER EVAC'}
-           </button>
+           <div className="w-[1px] h-12 bg-white/10 hidden md:block" />
+           
+           <div className="w-64">
+             <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">Override Control</div>
+             <button 
+               onClick={handleEmergency} 
+               disabled={isEmergency} 
+               aria-label="Trigger stadium evacuation protocol"
+               className={`w-full py-2 font-black text-[10px] uppercase tracking-widest transition-all ${isEmergency ? 'bg-red-600 text-white animate-pulse' : 'border border-red-500/50 text-red-500 hover:bg-red-500 hover:text-white'}`}
+             >
+              {isEmergency ? 'EVACUATING...' : 'TRIGGER EVAC'}
+             </button>
+           </div>
         </div>
       </div>
     </div>
