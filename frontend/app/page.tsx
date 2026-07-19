@@ -668,7 +668,7 @@ export default function App() {
 
   // Fetch lock on mount (gracefully skip if backend offline)
   useEffect(() => {
-     fetch(`${API_URL}/api/seats/locked`)
+     fetch(`${getApiUrl()}/api/seats/locked`)
         .then(r => r.json())
         .then(data => setLockedSeats(data))
         .catch(() => {}); // Backend offline — silently skip
@@ -683,7 +683,7 @@ export default function App() {
   useEffect(() => {
      if (selectedSeat && username) {
         const seatId = `${selectedSeat[0].toFixed(2)}_${selectedSeat[2].toFixed(2)}`;
-        fetch(`${API_URL}/api/seats/lock`, {
+        fetch(`${getApiUrl()}/api/seats/lock`, {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ user_id: username, seat_id: seatId })
