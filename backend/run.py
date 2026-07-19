@@ -5,7 +5,7 @@ Built with Google Antigravity | Powered by Google Gemini AI
 
 Starts the FastAPI server with:
   - Swarm Engine (multi-agent crowd simulation)
-  - Google Gemini 2.5 Flash Lite integration (google-generativeai SDK)
+  - Google Gemini 2.0 Flash integration (google-genai SDK)
   - A* pathfinding with crowd-density-aware costs
   - Real-time WebSocket state sync
 """
@@ -19,9 +19,15 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="google.genai")
 
 # Register custom module path so "import genai" works
-from google import genai
-sys.modules['genai'] = genai
-import genai
+try:
+    import genai
+except ImportError:
+    try:
+        from google import genai
+        sys.modules['genai'] = genai
+    except ImportError:
+        print("[SwarmAI] google-genai not installed — Gemini AI features will use fallback mode")
+        genai = None
 
 
 def main():
@@ -31,7 +37,7 @@ def main():
     # Configure Google Gemini if API key is available
     api_key = os.environ.get("GOOGLE_API_KEY", "")
     if api_key:
-        print(f"[SwarmAI] Google Gemini AI configured (model: gemini-2.5-flash-lite)")
+        print(f"[SwarmAI] Google Gemini AI configured (model: gemini-2.0-flash)")
     else:
         print("[SwarmAI] Google Gemini AI running in fallback mode (set GOOGLE_API_KEY for full AI)")
 
@@ -41,7 +47,7 @@ def main():
     sys.path.insert(0, base_dir)
 
     print("[SwarmAI] Starting Backend Server...")
-    print("[SwarmAI] Google Services: Gemini 2.5 Flash Lite (google-genai SDK)")
+    print("[SwarmAI] Google Services: Gemini 2.0 Flash (google-genai SDK)")
 
     # Programmatically start uvicorn - respect PORT env var for Cloud Run compatibility
     port = int(os.environ.get("PORT", 8000))

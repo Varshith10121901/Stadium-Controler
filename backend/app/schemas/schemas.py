@@ -107,12 +107,7 @@ class WSMessage(BaseModel):
     """Generic WebSocket message wrapper."""
     type: str  # "agent_update", "metrics", "negotiation", "emergency", "chat"
     data: dict
-    timestamp: str = ""
-
-    def __init__(self, **data):
-        super().__init__(**data)
-        if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+    timestamp: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
 
 
 class NegotiationMessage(BaseModel):

@@ -274,7 +274,7 @@ class SwarmAgent:
             "net_utility": round(net_utility, 4),
             "my_utility": my_utility,
             "their_utility": their_utility,
-            "proposal": f"Spread apart by {round(distance(self.x, other.x, self.y, other.y), 1)} units",
+            "proposal": f"Spread apart by {round(distance(self.x, self.y, other.x, other.y), 1)} units",
             "outcome": "accepted" if accepted else "rejected",
             "message": (
                 f"Agents {self.agent_id[:8]} & {other.agent_id[:8]}: "

@@ -6,8 +6,7 @@ Designed for instant demo with SQLite; easily switched to PostgreSQL.
 """
 
 from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, JSON
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
 from datetime import datetime
 
 # ── Database URL ──────────────────────────────────────────────────────────────
@@ -19,7 +18,9 @@ DATABASE_URL = "sqlite:///./swarmai.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-Base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 
 class MetricRecord(Base):

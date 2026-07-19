@@ -32,11 +32,11 @@ from ..utils.metrics import (
     calculate_wait_time_swarm
 )
 
-# Google Firebase Firestore — import at module level for clean dependency injection
+# Google Firebase Firestore — direct client access (avoids circular import)
 try:
-    from app.routes.firestore import save_swarm_metrics as _fb_push
+    from app.firebase import db as _firestore_db
 except Exception:
-    _fb_push = None
+    _firestore_db = None
 
 class SwarmEngine:
     """
@@ -207,7 +207,7 @@ class SwarmEngine:
                     })
 
                 # ── Step 9: Closed-Loop Google Firebase Sync (every 8 ticks) ──────
-                if self.tick % 8 == 0 and _fb_push is not None:
+                if self.tick % 8 == 0 and _firestore_db is not None:
                     cong = self.current_metrics.get("congestion_score", 0.0)
 
                     # Determine LoS grade from Fruin thresholds
@@ -219,6 +219,7 @@ class SwarmEngine:
                     else:             los = "F"
 
                     metrics_payload = {
+                        "timestamp": datetime.utcnow(),
                         "total_agents": len(self.agents),
                         "avg_wait_seconds": self.current_metrics.get("avg_wait_time", 0.0),
                         "global_congestion": cong,
@@ -229,7 +230,8 @@ class SwarmEngine:
                         "heatmap": self._get_downsampled_density() or {}
                     }
                     try:
-                        await _fb_push(metrics_payload)
+                        doc_ref = _firestore_db.collection("swarm_metrics").document()
+                        doc_ref.set(metrics_payload)
                         print(f"✅ [Firebase] Metrics synced at tick {self.tick} (LoS: {los})")
                     except Exception as e:
                         print(f"⚠️ [Firebase] Push skipped (graceful fallback): {e}")

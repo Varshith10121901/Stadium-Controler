@@ -4,6 +4,8 @@ __pycache__/
 *.pyc
 .next/
 *.db
+venv/
+backend/venv/
 
 # Environment
 .env
@@ -19,3 +21,4 @@ Thumbs.db
 
 # Logs
 *.log
+

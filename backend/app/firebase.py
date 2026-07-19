@@ -11,10 +11,19 @@ def init_firebase():
         from firebase_admin import credentials, firestore
         
         if not firebase_admin._apps:
-            firebase_admin.initialize_app()
+            # Check for credentials file or Application Default Credentials
+            cred_path = os.environ.get("GOOGLE_APPLICATION_CREDENTIALS")
+            if cred_path and os.path.exists(cred_path):
+                cred = credentials.Certificate(cred_path)
+                firebase_admin.initialize_app(cred)
+            else:
+                firebase_admin.initialize_app()
         
         db = firestore.client()
         print("✅ Firebase Admin SDK initialized — Firestore active")
+    except ImportError:
+        print("⚠️  firebase-admin not installed — Firestore writes will be skipped.")
+        db = None
     except Exception as e:
         print(f"⚠️  Firebase offline (local mode): {e}")
         print("   Firestore writes will be skipped. Deploy to Cloud Run for full Firebase.")

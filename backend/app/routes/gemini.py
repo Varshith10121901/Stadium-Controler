@@ -1,11 +1,11 @@
 """
 SwarmAI — Google Gemini AI Integration (Google Service)
 =========================================================
-This module integrates Google's Gemini AI (google-generativeai SDK)
+This module integrates Google's Gemini AI (google-genai SDK)
 as the intelligence layer for the SwarmAI stadium assistant chatbot.
 
-Google Service: Google Gemini 2.5 Flash Lite
-SDK: google-generativeai (https://pypi.org/project/google-generativeai/)
+Google Service: Google Gemini 2.0 Flash
+SDK: google-genai (https://pypi.org/project/google-genai/)
 API Key: Provisioned via Google AI Studio (https://aistudio.google.com)
 Built with: Google Antigravity
 
@@ -22,10 +22,18 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, module="google.genai")
 
 # Register custom module path so "import genai" works
-from google import genai
-from google.genai import types
-sys.modules['genai'] = genai
-import genai
+try:
+    import genai
+    from genai import types
+except ImportError:
+    try:
+        from google import genai
+        from google.genai import types
+        sys.modules['genai'] = genai
+    except ImportError:
+        genai = None
+        types = None
+        print("[Gemini] google-genai not installed — AI endpoints will use fallback responses")
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -40,7 +48,7 @@ class GenerativeModelShim:
     def __init__(self, model_name: str, system_instruction: str = None):
         self.model_name = model_name
         self.system_instruction = system_instruction
-        self.client = genai.Client(api_key=GOOGLE_API_KEY)
+        self.client = genai.Client(api_key=GOOGLE_API_KEY) if genai else None
 
     def generate_content(self, contents: str):
         config = None
@@ -57,7 +65,7 @@ class GenerativeModelShim:
 def _get_model(system_instruction: str = None):
     """Create a Gemini model instance with optional system instruction."""
     return GenerativeModelShim(
-        model_name="gemini-2.5-flash-lite",
+        model_name="gemini-2.0-flash",
         system_instruction=system_instruction
     )
 
