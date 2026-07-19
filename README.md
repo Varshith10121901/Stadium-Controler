@@ -1,12 +1,30 @@
-# SwarmAI Bernabeu Edition — Decentralized Attendee-Powered AI Swarm
+# SwarmAI Bernabéu Edition — Decentralized Attendee-Powered AI Swarm
 
-> **Built with Google Antigravity | Deployed on Google Cloud Run | Powered by Google Gemini AI**  
-> **Turn 80,000 attendee devices into an active, self-organizing P2P AI Swarm that eliminates stadium bottleneck congestion.**
+> **Deployed on Vercel & Firebase | Deployed with Google Gemini 2.5 Flash Lite**  
+> **Turn 80,000 attendee devices into a decentralized, self-organizing peer-to-peer AI Swarm that resolves stadium queue bottleneck congestion.**
+
+## Live Deployed Demo
+* **Attendee Mobile App & Operator Dashboard**: [stadium-controler.vercel.app](https://stadium-controler.vercel.app)
 
 ---
 
 ## Chosen Vertical: Smart Stadium Operations
-Estadio Santiago Bernabeu accommodates over 80,000 fans. Standard navigation apps do not understand internal stadium seating tiers, aisles, or localized concession queues. **SwarmAI Bernabeu Edition** addresses this by converting every fan's smartphone into an active node in a peer-to-peer AI swarm network. Using Fruin's 1980 Crowd Science, real-time telemetry, and Google Gemini, SwarmAI calculates optimal paths along aisles and concourses, saving up to 42% in queue wait times.
+Estadio Santiago Bernabéu accommodates over 80,000 fans. Standard navigation apps do not understand internal stadium seating tiers, aisles, or localized concession queues. **SwarmAI Bernabéu Edition** addresses this by converting every fan's smartphone into an active node in a decentralized crowd-simulation loop. Using Fruin's Crowd Science, real-time telemetry, and Google Gemini, SwarmAI calculates optimal paths along aisles and concourses, saving up to 42% in queue wait times.
+
+---
+
+## 🗺️ Problem Statement Feature Mapping
+
+The table below maps each of the Hackathon's evaluated dimensions to the exact implementation files:
+
+| Feature / Dimension | Description & Purpose | Code / Path Implementation |
+| :--- | :--- | :--- |
+| **Dynamic Crowd-Monitoring** | Tracks crowd density maps and wait times at exits and concourses in real-time. | [`frontend/app/dashboard/page.tsx`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/app/dashboard/page.tsx) |
+| **GenAI Multilingual Assistant** | Multi-language chatbot that answers fan questions and triggers smart navigation routes. | [`frontend/app/api/chat/route.ts`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/app/api/chat/route.ts) |
+| **Accessible Routing (♿)** | Wheelchair-aware cost pathfinder routing that avoids stairs and favors ramps/elevators. | [`frontend/lib/routing.ts`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/lib/routing.ts) |
+| **Transportation Advisor** | Predicts wait times for Metro, Buses, Parking, and Rideshares dynamically near exit gates. | [`frontend/app/api/transport/route.ts`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/app/api/transport/route.ts) |
+| **Sustainability Signals** | Real-time tracking of estimated CO₂ kilograms saved by reducing gate queues. | [`frontend/components/DashboardCharts.tsx`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/components/DashboardCharts.tsx) |
+| **Shared Operator & Volunteer View**| Single unified live operator control interface for coordinators, venue staff, and volunteers. | [`frontend/app/dashboard/page.tsx`](file:///d:/Hackathons/PROMPTWARS%202/swarmai/frontend/app/dashboard/page.tsx) |
 
 ---
 
@@ -16,10 +34,9 @@ Estadio Santiago Bernabeu accommodates over 80,000 fans. Standard navigation app
 graph TB
     Client["Attendee PWA / Client UI"]
     FPV["First-Person View (FPV) Tracker"]
-    Dashboard["Operator Control Panel"]
+    Dashboard["Operator & Volunteer Control Panel"]
     Store["Zustand State Store"]
     API["REST Endpoints /api/routes"]
-    WS["WS Connection Manager"]
     Engine["SwarmEngine Simulation"]
     Pathfinder["A*-Aisle Routing Engine"]
     Gemini["Gemini 2.5 Flash Lite"]
@@ -30,11 +47,10 @@ graph TB
     Gemini -->|3. Suggest Destination| API
     API -->|4. Solve Path| Pathfinder
     Pathfinder -->|5. Follow Aisles| Client
-    Client -->|6. Sync Position| WS
-    WS -->|7. Step Agents| Engine
-    Engine -->|8. Push Live Telemetry| Firestore
-    Firestore -->|9. onSnapshot Update| Dashboard
-    Client -->|10. Trigger Traversal| FPV
+    Client -->|6. Step Agents| Engine
+    Engine -->|7. Push Live Telemetry| Firestore
+    Firestore -->|8. onSnapshot Update| Dashboard
+    Client -->|9. Trigger Traversal| FPV
 ```
 
 ---
@@ -59,11 +75,11 @@ sequenceDiagram
     Note over Engine: U_a = wait_time_a * cooperation_score<br/>U_b = wait_time_b * cooperation_score
     alt U_a > U_b
         Engine->>AgentA: Grant Pass Priority (Velocity = 1.0)
-        Engine->>AgentB: Yield / Slow Down (Velocity = 0.2)
+        Engine->>AgentB: Yield / Slow Down (Velocity = 0.25)
         Engine->>DB: Log Successful Negotiation
     else U_b >= U_a
         Engine->>AgentB: Grant Pass Priority (Velocity = 1.0)
-        Engine->>AgentA: Yield / Slow Down (Velocity = 0.2)
+        Engine->>AgentA: Yield / Slow Down (Velocity = 0.25)
         Engine->>DB: Log Successful Negotiation
     end
 ```
@@ -106,8 +122,8 @@ When routing, the A* algorithm is forced to path out of the seat block into the 
 When crowd density spikes, virtual agents negotiate passing order. The `SwarmEngine` assigns velocity dynamically based on wait time and a cooperation factor. This prevents gridlocks at exit gates and mimics cooperative human behavior.
 
 ### 3. Google Services Telemetry Loop
-* **Google Gemini 2.5 Flash Lite**: Deployed on Cloud Run, it interprets attendee questions and outputs structured JSON containing level-of-service (LoS) assessments, alternative routes, and safety details.
-* **Firebase Firestore**: Used as a real-time message bus. Every 8 simulation ticks, the backend writes density maps and flow metrics to the `swarm_metrics` collection, which are immediately reflected on the operator dashboard via `onSnapshot` listeners.
+* **Google Gemini 2.5 Flash Lite**: Interprets attendee questions and outputs structured JSON containing level-of-service (LoS) assessments, alternative routes, and safety details.
+* **Firebase Firestore**: Used as a real-time message bus. The app writes density maps and flow metrics to the `swarm_metrics` collection, which are immediately reflected on the operator dashboard via `onSnapshot` listeners.
 
 ---
 
@@ -117,10 +133,10 @@ When crowd density spikes, virtual agents negotiate passing order. The `SwarmEng
 * **Node.js 18+**
 * **npm**
 
-### 1. Initialize & Start the App
+### 1. Set Up and Run the Application
 All APIs and simulations have been consolidated inside the Next.js app. No external Python setup is required.
 ```bash
-# Install root workspace lockfiles and dependencies
+# Install root workspace dependencies
 npm install
 
 # Install frontend dependencies
@@ -134,11 +150,11 @@ npm run dev
 
 ---
 
-## Assumptions & Rules
-1. **Seating Sectors**: The stadium Grandstand consists of 16 concentric sectors separated by 8cm (0.08 rad) aisles.
-2. **Deterministic Simulation**: A Mulberry32 pseudo-random seed is used to keep client-side crowd rendering completely identical across both operator and fan devices.
-3. **Accessibility (Wheelchair Routing)**: Ramps are preferred and stair pathways are heavily penalized to route wheelchair users safely.
-4. **Offline Fallback**: If internet connectivity is lost or `GEMINI_API_KEY` is not provided, the system gracefully falls back to deterministic rule-based crowd routing.
+## Environment Variables Configuration
+To enable live GenAI capabilities, set the following environment variable on Vercel / local env:
+```env
+GEMINI_API_KEY=your_google_gemini_api_key
+```
 
 ---
 
@@ -151,8 +167,11 @@ npm run lint --prefix frontend
 # Run TypeScript typechecks
 npm run typecheck --prefix frontend
 
-# Run Vitest test suite
+# Run Vitest test suite (with coverage)
 npm run test:run --prefix frontend
+
+# Run Playwright E2E tests
+npm run test:e2e --prefix frontend
 ```
 
 ---

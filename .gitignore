@@ -30,4 +30,15 @@ Thumbs.db
 # Tooling metadata
 .zcode/
 
+# Coverage directory
+frontend/coverage/
+coverage/
+*.lcov
+
+# Playwright reports
+frontend/playwright-report/
+frontend/test-results/
+playwright-report/
+test-results/
+
 

@@ -103,7 +103,7 @@ export default function App() {
             if (selectedSeat) {
                const sx = (selectedSeat[0] / 1.1) + 50;
                const sy = (selectedSeat[2] / 1.1) + 50;
-               const pathRes = await fetch(`${getApiUrl()}/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}`);
+               const pathRes = await fetch(`${getApiUrl()}/api/routes/path?start_x=${sx}&start_y=${sy}&target_type=${target_type}&accessible=${accessible}`);
                if (pathRes && pathRes.ok) {
                    const pathData = await pathRes.json();
                    if (pathData.path && pathData.path.length > 0) {
@@ -227,6 +227,7 @@ export default function App() {
       )}
 
       {/* 3D CANVAS */}
+      <div className="absolute inset-0 z-0">
         <StadiumCanvas
           isDark={isDark}
           isRoofOpen={isRoofOpen}
@@ -243,6 +244,14 @@ export default function App() {
           setIsFpv={setIsFpv}
           requestPath={requestPath}
         />
+        {/* Screen Reader Announcements for Dynamic Updates */}
+        <div className="sr-only" aria-live="polite" id="announcement-region">
+          {selectedSeat ? `Position synced at coordinate X: ${selectedSeat[0].toFixed(1)}, Z: ${selectedSeat[2].toFixed(1)}.` : 'No location selected.'}
+          {mappedPath && mappedPath.length > 0 ? ` Optimal SwarmAI path calculated with ${mappedPath.length} vectors.` : ''}
+          {isFollowingPath ? ' Navigating along the optimal path.' : ''}
+          {isEmergency ? ' Attention: Emergency evacuation protocol is active. Rerouting all fans to nearest exit gates.' : ''}
+        </div>
+      </div>
 
       {/* INTRO SCREEN (Refined per feedback) */}
       {appState === 'intro' && (
@@ -338,6 +347,13 @@ export default function App() {
                   aria-pressed={isEmergency}
                   className={`px-4 py-2 border rounded-xl font-bold text-[10px] uppercase tracking-widest focus-visible:ring-2 focus-visible:ring-red-400 ${isEmergency ? 'bg-red-500 text-white animate-pulse' : isDark ? 'bg-black/50 border-white/20' : 'bg-white/80 border-slate-300'}`}>
                    {isEmergency ? 'REROUTING...' : 'EMERGENCY TRIGGER'}
+                </button>
+                <button
+                  onClick={() => setAccessible(a => !a)}
+                  aria-label={accessible ? 'Disable accessible routing mode' : 'Enable accessible routing mode (prefers ramps, avoids stairs)'}
+                  aria-pressed={accessible}
+                  className={`px-3 py-2 border rounded-xl font-bold text-[9px] uppercase tracking-wider focus-visible:ring-2 focus-visible:ring-emerald-400 ${accessible ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40' : isDark ? 'bg-black/50 border-white/20 text-white' : 'bg-white/80 border-slate-300 text-slate-700'}`}>
+                  ♿ {accessible ? 'Accessible On' : 'Accessible Off'}
                 </button>
                 <button
                   onClick={() => setHighContrast(h => !h)}
@@ -478,6 +494,7 @@ export default function App() {
                   <button 
                       onClick={() => { setIsFollowingPath(true); setIsFpv(true); }}
                       disabled={isFollowingPath || !mappedPath || mappedPath.length === 0}
+                      aria-label="Start virtual path traversal animation from your seat"
                       className={`flex items-center gap-2 py-2 px-5 rounded-full font-black uppercase text-[9px] tracking-widest transition-all whitespace-nowrap border-2 ${
                         (!mappedPath || mappedPath.length === 0)
                           ? 'bg-slate-200/50 text-slate-500 border-slate-300 shadow-none cursor-not-allowed opacity-70' 

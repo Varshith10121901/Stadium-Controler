@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
+import { getLockedSeats } from '@/lib/seatsStore';
 
-const lockedSeats: Record<string, string> = {
-  "35.00_-15.00": "user_alpha",
-  "12.50_20.00": "user_beta"
-};
-
+/**
+ * GET /api/seats/locked
+ *
+ * Returns a dictionary map of all locked/reserved seats on the stadium grandstand.
+ */
 export async function GET() {
-  return NextResponse.json(lockedSeats);
+  return NextResponse.json(getLockedSeats());
 }

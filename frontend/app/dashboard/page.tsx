@@ -385,7 +385,7 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 border border-white/10 rounded-lg p-1 mr-2">
             {[1, 2, 5, 10].map((s) => (
-              <button key={s} onClick={() => { setSimSpeedLocal(s); setSimSpeed(s); }} className={`px-3 py-1 rounded text-[10px] font-black transition-all ${simSpeed === s ? 'bg-white text-black' : 'text-gray-500 hover:text-white'}`}>
+              <button key={s} onClick={() => { setSimSpeedLocal(s); setSimSpeed(s); }} className={`px-3 py-1 rounded text-[10px] font-black transition-all ${simSpeed === s ? 'bg-white text-black' : 'text-gray-300 hover:text-white'}`}>
                 {s}X
               </button>
             ))}
@@ -454,7 +454,7 @@ export default function DashboardPage() {
                </span>
                <button 
                   onClick={() => setShowBeforeAfter(!showBeforeAfter)} 
-                  className={`px-5 py-2 border text-[10px] font-black uppercase tracking-widest transition-all ${showBeforeAfter ? 'bg-white text-black' : 'border-white/20 text-gray-400 hover:text-white hover:border-white/50'}`}
+                  className={`px-5 py-2 border text-[10px] font-black uppercase tracking-widest transition-all ${showBeforeAfter ? 'bg-white text-black' : 'border-white/20 text-gray-300 hover:text-white hover:border-white/50'}`}
                >
                   Comparison Mode
                </button>
@@ -543,10 +543,10 @@ export default function DashboardPage() {
                  <span className="text-red-500 font-mono text-xs">{pieData.find(d => d.name === 'waiting')?.value || 0}</span>
              </div>
              <div className="flex justify-between items-end border-b border-white/5 pb-2">
-                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                 <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest flex items-center gap-2">
                      <div className="w-2 h-2 rounded-full bg-[#ffffff]"></div> Default/Other
                  </span>
-                 <span className="text-gray-400 font-mono text-xs">{pieData.find(d => d.name === 'default')?.value || 0}</span>
+                 <span className="text-gray-300 font-mono text-xs">{pieData.find(d => d.name === 'default')?.value || 0}</span>
              </div>
           </div>
         </div>
@@ -570,7 +570,7 @@ export default function DashboardPage() {
       <div className="p-8 grid grid-cols-12 gap-6 pt-0">
         <div className="col-span-12 border border-white/10 bg-white/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
            <div className="flex-1">
-             <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">Gate Controls</div>
+             <div className="text-[10px] text-gray-300 font-black uppercase tracking-widest mb-2">Gate Controls</div>
              <div className="grid grid-cols-4 gap-2" role="group" aria-label="Stadium gate status controls">
                {gatesRef.current.map(g => (
                   <button 
@@ -589,7 +589,7 @@ export default function DashboardPage() {
            <div className="w-[1px] h-12 bg-white/10 hidden md:block" />
            
            <div className="w-64">
-             <div className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">Override Control</div>
+             <div className="text-[10px] text-gray-300 font-black uppercase tracking-widest mb-2">Override Control</div>
              <button 
                onClick={handleEmergency} 
                disabled={isEmergency} 
@@ -612,7 +612,7 @@ function MetricCard({ label, value, icon: Icon, color }: { label: string; value:
         <Icon size={18} />
       </div>
       <div className="text-3xl font-black mb-2 opacity-90 font-mono tracking-tighter">{value}</div>
-      <div className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">{label}</div>
+      <div className="text-[9px] text-gray-300 font-bold uppercase tracking-widest">{label}</div>
     </div>
   );
 }
@@ -620,7 +620,7 @@ function MetricCard({ label, value, icon: Icon, color }: { label: string; value:
 function CompRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between items-end border-b border-white/10 pb-4 mb-4">
-      <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{label}</span>
+      <span className="text-[10px] text-gray-300 font-bold uppercase tracking-widest">{label}</span>
       <span className="text-xl font-black font-mono tracking-tighter">{value}</span>
     </div>
   );

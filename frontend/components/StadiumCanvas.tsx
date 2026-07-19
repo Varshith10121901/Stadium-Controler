@@ -89,7 +89,11 @@ function PhysicalPOI({ position, label, color, waitTime, isHotspot }: { position
       )}
 
       <Html position={[0, isGate ? 7 : 8, 0]} center >
-         <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap text-white pointer-events-none transform -translate-y-4 shadow-xl">
+         <div 
+            role="status"
+            aria-label={`${label}, status: ${waitTime}`}
+            className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20 whitespace-nowrap text-white pointer-events-none transform -translate-y-4 shadow-xl"
+         >
             <p className="text-[10px] font-bold uppercase tracking-widest leading-tight">{label}</p>
             <p className={`text-[9px] font-black mt-0.5 ${isHotspot ? 'text-red-400 animate-pulse' : 'text-emerald-400'}`}>{waitTime}</p>
          </div>

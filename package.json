@@ -8,10 +8,5 @@
     "build": "npm run build --prefix frontend",
     "start": "npm start --prefix frontend",
     "lint": "npm run lint --prefix frontend"
-  },
-  "dependencies": {
-    "next": "^15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
   }
 }
